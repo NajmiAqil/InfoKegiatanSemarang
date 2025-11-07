@@ -1,59 +1,51 @@
 'use client';
 
-import { useState } from 'react';
-import { ActivityForm } from '@/components/activity-form';
-import { ActivityList } from '@/components/activity-list';
+import { useState, useEffect } from 'react';
 import { ScheduleDisplay } from '@/components/schedule-display';
 import type { Activity } from '@/lib/types';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Sparkles, CalendarDays, Loader2 } from 'lucide-react';
 import { generateSchedule } from '@/ai/flows/generate-schedule-from-activities';
 import { useToast } from "@/hooks/use-toast"
 
+const defaultActivities: Activity[] = [
+    { description: 'Sarapan dan persiapan', duration: 60, timeOfDay: 'morning', priority: 'high' },
+    { description: 'Kerja atau Belajar', duration: 240, timeOfDay: 'morning', priority: 'high' },
+    { description: 'Makan siang', duration: 60, timeOfDay: 'afternoon', priority: 'medium' },
+    { description: 'Istirahat sejenak', duration: 30, timeOfDay: 'afternoon', priority: 'low' },
+    { description: 'Lanjutkan kerja/belajar', duration: 180, timeOfDay: 'afternoon', priority: 'high' },
+    { description: 'Olahraga ringan', duration: 45, timeOfDay: 'evening', priority: 'medium' },
+    { description: 'Makan malam', duration: 60, timeOfDay: 'evening', priority: 'medium' },
+    { description: 'Waktu luang', duration: 120, timeOfDay: 'evening', priority: 'low' },
+];
+
+
 export default function Home() {
-  const [activities, setActivities] = useState<Activity[]>([]);
   const [schedule, setSchedule] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast()
 
+  useEffect(() => {
+    const handleGenerateSchedule = async () => {
+      setIsLoading(true);
+      try {
+        const result = await generateSchedule({ activities: defaultActivities, scheduleType: 'daily' });
+        setSchedule(result.schedule);
+      } catch (error) {
+        console.error('Error generating schedule:', error);
+         toast({
+          variant: "destructive",
+          title: "Generation Failed",
+          description: "Could not generate schedule. Please try again.",
+        })
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const handleAddActivity = (activity: Activity) => {
-    setActivities((prev) => [...prev, activity]);
-  };
-  
-  const handleRemoveActivity = (index: number) => {
-    setActivities((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const handleGenerateSchedule = async (scheduleType: 'daily' | 'weekly') => {
-    if (activities.length === 0) {
-       toast({
-        variant: "destructive",
-        title: "No Activities",
-        description: "Please add at least one activity before generating a schedule.",
-      })
-      return;
-    }
-
-    setIsLoading(true);
-    setSchedule(null);
-
-    try {
-      const result = await generateSchedule({ activities, scheduleType });
-      setSchedule(result.schedule);
-    } catch (error) {
-      console.error('Error generating schedule:', error);
-       toast({
-        variant: "destructive",
-        title: "Generation Failed",
-        description: "Could not generate schedule. Please try again.",
-      })
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    handleGenerateSchedule();
+  }, [toast]);
 
   return (
     <div className="min-h-screen bg-background font-body">
@@ -66,52 +58,8 @@ export default function Home() {
         </p>
       </header>
 
-      <main className="container mx-auto max-w-7xl px-4 pb-16">
-        <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-8">
-          <div className="space-y-8">
-            <ActivityForm onActivityAdd={handleAddActivity} />
-            <ActivityList activities={activities} onRemoveActivity={handleRemoveActivity} />
-          </div>
-
-          <div className="space-y-8">
-            <Card className="shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Sparkles className="text-primary" />
-                  Generate Your Schedule
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="mb-4 text-muted-foreground">
-                  Once you've added your activities, let our AI create an optimized schedule for you.
-                </p>
-                <div className="flex flex-col gap-4 sm:flex-row">
-                  <Button
-                    onClick={() => handleGenerateSchedule('daily')}
-                    disabled={isLoading || activities.length === 0}
-                    className="w-full"
-                  >
-                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CalendarDays className="mr-2 h-4 w-4" />}
-                    Generate Daily Schedule
-                  </Button>
-                  <Button
-                    onClick={() => handleGenerateSchedule('weekly')}
-                    disabled={isLoading || activities.length === 0}
-                    variant="secondary"
-                    className="w-full"
-                  >
-                     {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CalendarDays className="mr-2 h-4 w-4" />}
-                    Generate Weekly Schedule
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Separator />
-            
-            <ScheduleDisplay schedule={schedule} isLoading={isLoading} />
-          </div>
-        </div>
+      <main className="container mx-auto max-w-4xl px-4 pb-16">
+        <ScheduleDisplay schedule={schedule} isLoading={isLoading} />
       </main>
     </div>
   );
