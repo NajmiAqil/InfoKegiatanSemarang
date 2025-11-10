@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ScheduleDisplay } from '@/components/schedule-display';
-import type { Activity } from '@/lib/types';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { Sparkles, CalendarDays, Loader2 } from 'lucide-react';
+import type { Activity, ScheduledEvent } from '@/lib/types';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { generateSchedule } from '@/ai/flows/generate-schedule-from-activities';
 import { useToast } from "@/hooks/use-toast"
+import { Calendar } from "@/components/ui/calendar"
+import { format, isSameDay, parseISO } from 'date-fns';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const defaultActivities: Activity[] = [
     { description: 'Sarapan dan persiapan', duration: 60, timeOfDay: 'morning', priority: 'high' },
@@ -22,16 +22,17 @@ const defaultActivities: Activity[] = [
 
 
 export default function Home() {
-  const [schedule, setSchedule] = useState<string | null>(null);
+  const [events, setEvents] = useState<ScheduledEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast()
+  const [date, setDate] = useState<Date | undefined>(new Date())
 
   useEffect(() => {
     const handleGenerateSchedule = async () => {
       setIsLoading(true);
       try {
         const result = await generateSchedule({ activities: defaultActivities, scheduleType: 'daily' });
-        setSchedule(result.schedule);
+        setEvents(result.events);
       } catch (error) {
         console.error('Error generating schedule:', error);
          toast({
@@ -47,6 +48,10 @@ export default function Home() {
     handleGenerateSchedule();
   }, [toast]);
 
+  const selectedDayEvents = events.filter(event => date && isSameDay(parseISO(event.startTime), date));
+
+  const scheduledDays = events.map(event => parseISO(event.startTime));
+
   return (
     <div className="min-h-screen bg-background font-body">
       <header className="py-8 px-4 text-center">
@@ -59,7 +64,59 @@ export default function Home() {
       </header>
 
       <main className="container mx-auto max-w-4xl px-4 pb-16">
-        <ScheduleDisplay schedule={schedule} isLoading={isLoading} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <Card>
+                <CardContent className="p-0">
+                    <Calendar
+                        mode="single"
+                        selected={date}
+                        onSelect={setDate}
+                        className="p-0"
+                        classNames={{
+                            day: "h-14 w-full text-lg",
+                            head_cell: "w-full",
+                            day_selected: "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary/90",
+                        }}
+                        modifiers={{
+                            scheduled: scheduledDays
+                        }}
+                        modifiersClassNames={{
+                            scheduled: 'bg-accent/50 rounded-md'
+                        }}
+                    />
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Schedule for {date ? format(date, 'PPP') : '...'}</CardTitle>
+                    <CardDescription>Here are your scheduled activities for the selected day.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {isLoading && (
+                        <div className="space-y-4">
+                            <Skeleton className="h-12 w-full" />
+                            <Skeleton className="h-12 w-full" />
+                            <Skeleton className="h-12 w-full" />
+                        </div>
+                    )}
+                    {!isLoading && selectedDayEvents.length > 0 ? (
+                        <ul className="space-y-3">
+                            {selectedDayEvents.sort((a,b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()).map(event => (
+                                <li key={event.title} className="p-3 bg-card-foreground/5 rounded-lg">
+                                    <p className="font-bold">{event.title}</p>
+                                    <p className="text-sm text-muted-foreground">
+                                        {format(parseISO(event.startTime), 'p')} - {format(parseISO(event.endTime), 'p')}
+                                    </p>
+                                </li>
+                            ))}
+                        </ul>
+                    ) : !isLoading && (
+                        <p>No activities scheduled for this day.</p>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
       </main>
     </div>
   );

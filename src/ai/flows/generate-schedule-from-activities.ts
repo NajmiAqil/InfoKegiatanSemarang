@@ -9,6 +9,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { scheduledEventSchema } from '@/lib/types';
 
 const GenerateScheduleInputSchema = z.object({
   activities: z.array(
@@ -24,7 +25,7 @@ const GenerateScheduleInputSchema = z.object({
 export type GenerateScheduleInput = z.infer<typeof GenerateScheduleInputSchema>;
 
 const GenerateScheduleOutputSchema = z.object({
-  schedule: z.string().describe('The generated schedule in a human-readable format.'),
+  events: z.array(scheduledEventSchema).describe("The generated schedule as a list of events for today."),
 });
 export type GenerateScheduleOutput = z.infer<typeof GenerateScheduleOutputSchema>;
 
@@ -36,7 +37,9 @@ const prompt = ai.definePrompt({
   name: 'generateSchedulePrompt',
   input: {schema: GenerateScheduleInputSchema},
   output: {schema: GenerateScheduleOutputSchema},
-  prompt: `You are a personal schedule optimizer. Generate an optimized {{scheduleType}} schedule based on the user's logged activities and their priorities.
+  prompt: `You are a personal schedule optimizer. Generate an optimized {{scheduleType}} schedule for today based on the user's logged activities and their priorities.
+
+The current date is ${new Date().toISOString()}. All event times should be for today.
 
 Consider the activity descriptions, durations, preferred times of day, and priorities when creating the schedule.
 
@@ -47,7 +50,7 @@ Activities:
 
 Ensure the schedule is realistic and accounts for potential conflicts or constraints.
 
-Output the schedule in a clear, human-readable format.
+Output the schedule as a structured list of events.
 `,
 });
 
