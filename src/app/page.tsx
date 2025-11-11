@@ -72,60 +72,62 @@ export default function Home() {
         </p>
       </header>
 
-      <main className="container mx-auto max-w-2xl px-4 pb-16 flex flex-col items-center">
-        <Card className="w-full">
-            <CardContent className="p-0 flex justify-center">
-                <Calendar
-                    mode="single"
-                    selected={date}
-                    onSelect={handleDateSelect}
-                    className="p-0"
-                    classNames={{
-                        day: "h-14 w-full text-lg",
-                        head_cell: "w-full",
-                        day_selected: "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary/90",
-                    }}
-                    modifiers={{
-                        scheduled: scheduledDays
-                    }}
-                    modifiersClassNames={{
-                        scheduled: 'bg-accent/50 rounded-md'
-                    }}
-                />
-            </CardContent>
-        </Card>
+      <main className="container mx-auto max-w-5xl px-4 pb-16">
+        <div className="flex flex-col md:flex-row gap-8 items-start justify-center">
+          <Card className="w-full md:w-auto">
+              <CardContent className="p-0 flex justify-center">
+                  <Calendar
+                      mode="single"
+                      selected={date}
+                      onSelect={handleDateSelect}
+                      className="p-0"
+                      classNames={{
+                          day: "h-14 w-full text-lg",
+                          head_cell: "w-full",
+                          day_selected: "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary/90",
+                      }}
+                      modifiers={{
+                          scheduled: scheduledDays
+                      }}
+                      modifiersClassNames={{
+                          scheduled: 'bg-accent/50 rounded-md'
+                      }}
+                  />
+              </CardContent>
+          </Card>
 
-        {hasDateBeenSelected && (
-            <Card className="mt-8 w-full">
-                <CardHeader>
-                    <CardTitle>Schedule for {date ? format(date, 'PPP') : '...'}</CardTitle>
-                    <CardDescription>Here are your scheduled activities for the selected day.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {isLoading && (
-                        <div className="space-y-4">
-                            <Skeleton className="h-12 w-full" />
-                            <Skeleton className="h-12 w-full" />
-                            <Skeleton className="h-12 w-full" />
-                        </div>
-                    )}
-                    {!isLoading && date && selectedDayEvents.length > 0 ? (
-                        <ul className="space-y-3">
-                            {selectedDayEvents.sort((a,b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()).map(event => (
-                                <li key={event.title} className="p-3 bg-card-foreground/5 rounded-lg">
-                                    <p className="font-bold">{event.title}</p>
-                                    <p className="text-sm text-muted-foreground">
-                                        {format(parseISO(event.startTime), 'p')} - {format(parseISO(event.endTime), 'p')}
-                                    </p>
-                                </li>
-                            ))}
-                        </ul>
-                    ) : !isLoading && date && (
-                        <p>No activities scheduled for this day.</p>
-                    )}
-                </CardContent>
-            </Card>
-        )}
+          {hasDateBeenSelected && (
+              <Card className="w-full flex-1">
+                  <CardHeader>
+                      <CardTitle>Schedule for {date ? format(date, 'PPP') : '...'}</CardTitle>
+                      <CardDescription>Here are your scheduled activities for the selected day.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                      {isLoading && (
+                          <div className="space-y-4">
+                              <Skeleton className="h-12 w-full" />
+                              <Skeleton className="h-12 w-full" />
+                              <Skeleton className="h-12 w-full" />
+                          </div>
+                      )}
+                      {!isLoading && date && selectedDayEvents.length > 0 ? (
+                          <ul className="space-y-3">
+                              {selectedDayEvents.sort((a,b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()).map(event => (
+                                  <li key={event.title} className="p-3 bg-card-foreground/5 rounded-lg">
+                                      <p className="font-bold">{event.title}</p>
+                                      <p className="text-sm text-muted-foreground">
+                                          {format(parseISO(event.startTime), 'p')} - {format(parseISO(event.endTime), 'p')}
+                                      </p>
+                                  </li>
+                              ))}
+                          </ul>
+                      ) : !isLoading && date && (
+                          <p>No activities scheduled for this day.</p>
+                      )}
+                  </CardContent>
+              </Card>
+          )}
+        </div>
       </main>
     </div>
   );
