@@ -82,7 +82,7 @@ export default function Home() {
                       onSelect={handleDateSelect}
                       className="p-0"
                       classNames={{
-                          day: "h-14 w-full text-lg",
+                          day: "h-20 w-full text-lg",
                           head_cell: "w-full",
                           day_selected: "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary/90",
                       }}
