@@ -25,7 +25,9 @@ export default function Home() {
   const [events, setEvents] = useState<ScheduledEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast()
-  const [date, setDate] = useState<Date | undefined>(new Date())
+  const [date, setDate] = useState<Date | undefined>(undefined);
+  const [hasDateBeenSelected, setHasDateBeenSelected] = useState(false);
+
 
   useEffect(() => {
     const handleGenerateSchedule = async () => {
@@ -47,6 +49,13 @@ export default function Home() {
 
     handleGenerateSchedule();
   }, [toast]);
+  
+  const handleDateSelect = (selectedDate: Date | undefined) => {
+    setDate(selectedDate);
+    if (selectedDate && !hasDateBeenSelected) {
+      setHasDateBeenSelected(true);
+    }
+  }
 
   const selectedDayEvents = events.filter(event => date && isSameDay(parseISO(event.startTime), date));
 
@@ -63,31 +72,31 @@ export default function Home() {
         </p>
       </header>
 
-      <main className="container mx-auto max-w-4xl px-4 pb-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <Card>
-                <CardContent className="p-0">
-                    <Calendar
-                        mode="single"
-                        selected={date}
-                        onSelect={setDate}
-                        className="p-0"
-                        classNames={{
-                            day: "h-14 w-full text-lg",
-                            head_cell: "w-full",
-                            day_selected: "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary/90",
-                        }}
-                        modifiers={{
-                            scheduled: scheduledDays
-                        }}
-                        modifiersClassNames={{
-                            scheduled: 'bg-accent/50 rounded-md'
-                        }}
-                    />
-                </CardContent>
-            </Card>
+      <main className="container mx-auto max-w-2xl px-4 pb-16 flex flex-col items-center">
+        <Card className="w-full">
+            <CardContent className="p-0 flex justify-center">
+                <Calendar
+                    mode="single"
+                    selected={date}
+                    onSelect={handleDateSelect}
+                    className="p-0"
+                    classNames={{
+                        day: "h-14 w-full text-lg",
+                        head_cell: "w-full",
+                        day_selected: "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary/90",
+                    }}
+                    modifiers={{
+                        scheduled: scheduledDays
+                    }}
+                    modifiersClassNames={{
+                        scheduled: 'bg-accent/50 rounded-md'
+                    }}
+                />
+            </CardContent>
+        </Card>
 
-            <Card>
+        {hasDateBeenSelected && (
+            <Card className="mt-8 w-full">
                 <CardHeader>
                     <CardTitle>Schedule for {date ? format(date, 'PPP') : '...'}</CardTitle>
                     <CardDescription>Here are your scheduled activities for the selected day.</CardDescription>
@@ -100,7 +109,7 @@ export default function Home() {
                             <Skeleton className="h-12 w-full" />
                         </div>
                     )}
-                    {!isLoading && selectedDayEvents.length > 0 ? (
+                    {!isLoading && date && selectedDayEvents.length > 0 ? (
                         <ul className="space-y-3">
                             {selectedDayEvents.sort((a,b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()).map(event => (
                                 <li key={event.title} className="p-3 bg-card-foreground/5 rounded-lg">
@@ -111,12 +120,12 @@ export default function Home() {
                                 </li>
                             ))}
                         </ul>
-                    ) : !isLoading && (
+                    ) : !isLoading && date && (
                         <p>No activities scheduled for this day.</p>
                     )}
                 </CardContent>
             </Card>
-        </div>
+        )}
       </main>
     </div>
   );
