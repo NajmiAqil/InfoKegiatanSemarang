@@ -74,16 +74,22 @@ export default function Home() {
 
       <main className="container mx-auto max-w-7xl px-4 pb-16">
         <div className="flex flex-col md:flex-row gap-8 items-start justify-center">
-          <Card className="w-full md:w-auto">
+          <Card className="w-full md:w-[42rem]">
               <CardContent className="p-0 flex justify-center">
                   <Calendar
                       mode="single"
                       selected={date}
                       onSelect={handleDateSelect}
-                      className="p-0"
+                      className="p-0 w-full"
                       classNames={{
-                          day: "h-20 w-full text-lg",
-                          head_cell: "w-full",
+                          months: "w-full",
+                          month: "w-full",
+                          table: "w-full",
+                          head_row: "w-full",
+                          row: "w-full justify-between",
+                          cell: "w-[5.5rem] h-20 text-lg",
+                          day: "w-full h-full",
+                          head_cell: "w-[5.5rem]",
                           day_selected: "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary/90",
                       }}
                       modifiers={{
