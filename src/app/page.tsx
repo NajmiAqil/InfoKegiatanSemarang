@@ -72,7 +72,7 @@ export default function Home() {
         </p>
       </header>
 
-      <main className="container mx-auto max-w-5xl px-4 pb-16">
+      <main className="container mx-auto max-w-7xl px-4 pb-16">
         <div className="flex flex-col md:flex-row gap-8 items-start justify-center">
           <Card className="w-full md:w-auto">
               <CardContent className="p-0 flex justify-center">
