@@ -87,9 +87,9 @@ export default function Home() {
                           table: "w-full",
                           head_row: "w-full",
                           row: "w-full justify-between",
-                          cell: "w-[5.5rem] h-20 text-lg",
+                          cell: "w-full h-20 text-base",
                           day: "w-full h-full",
-                          head_cell: "w-[5.5rem]",
+                          head_cell: "w-full",
                           day_selected: "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary/90",
                       }}
                       modifiers={{
