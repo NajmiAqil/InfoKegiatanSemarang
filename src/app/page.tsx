@@ -18,14 +18,14 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background font-body flex items-center justify-center p-4">
-      <main className="container mx-auto w-full">
+      <main className="container mx-auto w-full max-w-md">
         <Card className="w-full">
             <CardContent className="p-0 flex justify-center">
                 <Calendar
                     mode="single"
                     selected={date}
                     onSelect={setDate}
-                    className="w-full"
+                    className="p-3"
                 />
             </CardContent>
         </Card>
