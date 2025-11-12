@@ -61,7 +61,7 @@ export default function Home() {
 
   const scheduledDays = events.map(event => parseISO(event.startTime));
 
-  const DayWithSchedule = ({ date, ...props }: { date: Date } & React.HTMLAttributes<HTMLDivElement>) => {
+  const DayWithSchedule = ({ date, displayMonth, ...props }: { date: Date, displayMonth: Date } & React.HTMLAttributes<HTMLDivElement>) => {
     const dayEvents = events
       .filter(event => isSameDay(parseISO(event.startTime), date))
       .sort((a,b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
@@ -99,7 +99,7 @@ export default function Home() {
 
       <main className="container mx-auto max-w-7xl px-4 pb-16">
         <div className="flex flex-col md:flex-row gap-8 items-start justify-center">
-          <Card className="w-full md:w-[48rem] aspect-[12/6]">
+          <Card className="w-full md:w-[52rem] aspect-[12/6]">
               <CardContent className="p-0 flex justify-center h-full">
                   <Calendar
                       mode="single"
@@ -112,7 +112,7 @@ export default function Home() {
                           table: "w-full h-full",
                           head_row: "w-full flex justify-between",
                           row: "w-full flex justify-between flex-1",
-                          cell: "w-full h-24 text-base relative",
+                          cell: "w-full h-32 text-base relative",
                           day: "w-full h-full items-start justify-start p-2",
                           head_cell: "w-full",
                           day_selected: "bg-primary/20 text-primary-foreground focus:bg-primary/20",
