@@ -87,7 +87,7 @@ export default function Home() {
                           table: "w-full h-full",
                           head_row: "w-full flex justify-between",
                           row: "w-full flex justify-between flex-1",
-                          cell: "w-full h-auto text-base",
+                          cell: "w-full h-20 text-base",
                           day: "w-full h-full",
                           head_cell: "w-full",
                           day_selected: "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary/90",
