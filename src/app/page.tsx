@@ -21,13 +21,13 @@ export default function Home() {
               root: "h-full flex flex-col",
               months: "h-full",
               month: "h-full flex flex-col",
-              caption_label: "text-3xl font-bold",
+              caption_label: "text-4xl font-bold",
               table: "w-full h-full border-collapse flex flex-col",
               head_row: "grid grid-cols-7",
-              head_cell: "text-center text-xl font-medium",
+              head_cell: "text-center text-2xl font-medium border",
               row: "grid grid-cols-7 w-full mt-2 flex-1",
-              day: "h-full w-full p-0 text-lg",
-              cell: "text-center",
+              day: "h-full w-full p-0 text-2xl",
+              cell: "text-center border",
             }}
           />
         </CardContent>
