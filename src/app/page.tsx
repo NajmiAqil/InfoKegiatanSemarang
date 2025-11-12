@@ -74,7 +74,7 @@ export default function Home() {
 
       <main className="container mx-auto max-w-7xl px-4 pb-16">
         <div className="flex flex-col md:flex-row gap-8 items-start justify-center">
-          <Card className="w-full md:w-[48rem] aspect-[12/7]">
+          <Card className="w-full md:w-[48rem] aspect-[12/6]">
               <CardContent className="p-0 flex justify-center h-full">
                   <Calendar
                       mode="single"
