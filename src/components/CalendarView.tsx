@@ -207,11 +207,6 @@ export default function CalendarView() {
       }
     };
     
-    const scheduledDays = React.useMemo(() => {
-        if (!isClient) return [];
-        return events.map(event => new Date(event.date));
-    }, [events, isClient]);
-
     const filteredEvents = React.useMemo(() => {
         if (!isClient) return [];
         // On homepage (no user), show only public events
@@ -221,6 +216,11 @@ export default function CalendarView() {
         // On user pages, show public events and private events created by the user
         return events.filter(e => e.visibility === 'public' || (e.visibility === 'private' && e.createdBy === currentUser));
     }, [events, currentUser, isClient]);
+
+    const scheduledDays = React.useMemo(() => {
+        if (!isClient) return [];
+        return filteredEvents.map(event => new Date(event.date));
+    }, [filteredEvents, isClient]);
 
     if (!isClient) {
         return null;
@@ -264,7 +264,7 @@ export default function CalendarView() {
                 </CardContent>
             </Card>
             </div>
-            {date && <SchedulePanel selectedDate={date} events={filteredEvents} onAddEvent={handleAddEvent} showAddButton={isClient && !!currentUser} />}
+            {date && <SchedulePanel selectedDate={date} events={filteredEvents} onAddEvent={handleAddEvent} showAddButton={!!currentUser && isClient} />}
       </div>
     )
 }
