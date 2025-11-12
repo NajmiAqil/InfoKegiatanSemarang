@@ -2,12 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import type { Activity, ScheduledEvent } from '@/lib/types';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { generateSchedule } from '@/ai/flows/generate-schedule-from-activities';
 import { useToast } from "@/hooks/use-toast"
 import { Calendar } from "@/components/ui/calendar"
-import { format, isSameDay, parseISO, startOfDay } from 'date-fns';
-import { Skeleton } from '@/components/ui/skeleton';
+import { format, isSameDay, parseISO } from 'date-fns';
 
 const defaultActivities: Activity[] = [
     { description: 'Sarapan dan persiapan', duration: 60, timeOfDay: 'morning', priority: 'high' },
@@ -25,8 +24,13 @@ export default function Home() {
   const [events, setEvents] = useState<ScheduledEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast()
-  const [date, setDate] = useState<Date | undefined>(new Date());
-  const [hasDateBeenSelected, setHasDateBeenSelected] = useState(false);
+  const [date, setDate] = useState<Date | undefined>(undefined);
+  const [isClient, setIsClient] = useState(false)
+
+  useEffect(() => {
+    setIsClient(true)
+    setDate(new Date());
+  }, [])
 
 
   useEffect(() => {
@@ -50,18 +54,10 @@ export default function Home() {
     handleGenerateSchedule();
   }, [toast]);
   
-  const handleDateSelect = (selectedDate: Date | undefined) => {
-    setDate(selectedDate);
-    if (selectedDate && !hasDateBeenSelected) {
-      setHasDateBeenSelected(true);
-    }
-  }
-
-  const selectedDayEvents = events.filter(event => date && isSameDay(parseISO(event.startTime), date));
 
   const scheduledDays = events.map(event => parseISO(event.startTime));
 
-  const DayWithSchedule = ({ date, displayMonth, ...props }: { date: Date, displayMonth: Date } & React.HTMLAttributes<HTMLDivElement>) => {
+  const DayWithSchedule = ({ date, ...props }: { date: Date } & React.HTMLAttributes<HTMLDivElement>) => {
     const dayEvents = events
       .filter(event => isSameDay(parseISO(event.startTime), date))
       .sort((a,b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
@@ -85,6 +81,10 @@ export default function Home() {
     );
   };
 
+  if (!isClient) {
+    return null;
+  }
+
 
   return (
     <div className="min-h-screen bg-background font-body">
@@ -99,12 +99,12 @@ export default function Home() {
 
       <main className="container mx-auto max-w-7xl px-4 pb-16">
         <div className="flex flex-col md:flex-row gap-8 items-start justify-center">
-          <Card className="w-full md:w-[52rem] aspect-[12/6]">
+          <Card className="w-full md:w-[64rem] aspect-[12/7]">
               <CardContent className="p-0 flex justify-center h-full">
                   <Calendar
                       mode="single"
                       selected={date}
-                      onSelect={handleDateSelect}
+                      onSelect={setDate}
                       className="p-0 w-full h-full"
                       classNames={{
                           months: "w-full h-full flex flex-col",
@@ -112,7 +112,7 @@ export default function Home() {
                           table: "w-full h-full",
                           head_row: "w-full flex justify-between",
                           row: "w-full flex justify-between flex-1",
-                          cell: "w-full h-32 text-base relative",
+                          cell: "w-full h-40 text-base relative",
                           day: "w-full h-full items-start justify-start p-2",
                           head_cell: "w-full",
                           day_selected: "bg-primary/20 text-primary-foreground focus:bg-primary/20",
