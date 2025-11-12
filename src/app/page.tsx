@@ -15,14 +15,15 @@ export default function Home() {
             mode="single"
             selected={date}
             onSelect={setDate}
-            className="w-full h-full flex justify-center"
+            className="w-full h-full"
             classNames={{
-              months: 'w-full h-full',
+              months: 'w-full h-full flex',
               month: 'w-full h-full flex flex-col',
-              table: 'w-full h-full',
+              table: 'w-full h-full flex flex-col',
               head_row: 'flex justify-around',
-              row: 'flex justify-around items-center w-full',
-              day: 'h-24 w-16',
+              row: 'flex flex-1 justify-around items-center w-full',
+              day: 'h-full w-full max-w-none',
+              cell: 'h-full w-full max-w-none',
             }}
           />
         </CardContent>
