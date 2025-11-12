@@ -28,6 +28,7 @@ type Event = {
   tag: string;
   tagColor: string;
   description: string;
+  visibility: 'public' | 'private';
 };
 
 const EventDetailDialog = ({ event, children }: { event: Event, children: React.ReactNode }) => {
@@ -57,6 +58,7 @@ const AddEventDialog = ({ selectedDate, onAddEvent }: { selectedDate: Date; onAd
   const [time, setTime] = React.useState("");
   const [tag, setTag] = React.useState("Meeting");
   const [description, setDescription] = React.useState("");
+  const [visibility, setVisibility] = React.useState<'public' | 'private'>('public');
   const [open, setOpen] = React.useState(false);
 
   const handleSubmit = () => {
@@ -71,12 +73,14 @@ const AddEventDialog = ({ selectedDate, onAddEvent }: { selectedDate: Date; onAd
         time,
         tag,
         description,
+        visibility,
         tagColor: tagColorMap[tag] || "bg-gray-500",
       });
       setTitle("");
       setTime("");
       setTag("Meeting");
       setDescription("");
+      setVisibility("public");
       setOpen(false);
     }
   };
@@ -111,6 +115,15 @@ const AddEventDialog = ({ selectedDate, onAddEvent }: { selectedDate: Date; onAd
               <option>Meeting</option>
               <option>Personal</option>
               <option>Urgent</option>
+            </select>
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="visibility" className="text-right">
+              Visibility
+            </Label>
+            <select id="visibility" value={visibility} onChange={(e) => setVisibility(e.target.value as 'public' | 'private')} className="col-span-3 border rounded-md p-2">
+              <option value="public">Public</option>
+              <option value="private">Private</option>
             </select>
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
