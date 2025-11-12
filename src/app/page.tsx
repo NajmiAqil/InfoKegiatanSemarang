@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { generateSchedule } from '@/ai/flows/generate-schedule-from-activities';
 import { useToast } from "@/hooks/use-toast"
 import { Calendar } from "@/components/ui/calendar"
-import { format, isSameDay, parseISO } from 'date-fns';
+import { format, isSameDay, parseISO, startOfDay } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const defaultActivities: Activity[] = [
@@ -25,7 +25,7 @@ export default function Home() {
   const [events, setEvents] = useState<ScheduledEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast()
-  const [date, setDate] = useState<Date | undefined>(undefined);
+  const [date, setDate] = useState<Date | undefined>(new Date());
   const [hasDateBeenSelected, setHasDateBeenSelected] = useState(false);
 
 
@@ -61,6 +61,31 @@ export default function Home() {
 
   const scheduledDays = events.map(event => parseISO(event.startTime));
 
+  const DayWithSchedule = ({ date, ...props }: { date: Date } & React.HTMLAttributes<HTMLDivElement>) => {
+    const dayEvents = events
+      .filter(event => isSameDay(parseISO(event.startTime), date))
+      .sort((a,b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+  
+    return (
+      <div {...props}>
+        <time dateTime={date.toISOString()} className="absolute top-2 right-2">{format(date, 'd')}</time>
+        {dayEvents.length > 0 && (
+          <div className="mt-6 space-y-1 text-left text-xs overflow-y-auto h-full p-1">
+            {dayEvents.map(event => (
+              <div key={event.title} className="bg-primary/10 p-1 rounded-sm">
+                <p className="font-bold truncate">{event.title}</p>
+                <p className="text-muted-foreground">
+                  {format(parseISO(event.startTime), 'p')}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+
   return (
     <div className="min-h-screen bg-background font-body">
       <header className="py-8 px-4 text-center">
@@ -87,52 +112,23 @@ export default function Home() {
                           table: "w-full h-full",
                           head_row: "w-full flex justify-between",
                           row: "w-full flex justify-between flex-1",
-                          cell: "w-full h-20 text-base",
-                          day: "w-full h-full",
+                          cell: "w-full h-24 text-base relative",
+                          day: "w-full h-full items-start justify-start p-2",
                           head_cell: "w-full",
-                          day_selected: "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary/90",
+                          day_selected: "bg-primary/20 text-primary-foreground focus:bg-primary/20",
                       }}
                       modifiers={{
                           scheduled: scheduledDays
                       }}
                       modifiersClassNames={{
-                          scheduled: 'bg-accent/50 rounded-md'
+                          scheduled: 'bg-accent/20'
+                      }}
+                      components={{
+                        Day: DayWithSchedule,
                       }}
                   />
               </CardContent>
           </Card>
-
-          {hasDateBeenSelected && (
-              <Card className="w-full flex-1">
-                  <CardHeader>
-                      <CardTitle>Schedule for {date ? format(date, 'PPP') : '...'}</CardTitle>
-                      <CardDescription>Here are your scheduled activities for the selected day.</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                      {isLoading && (
-                          <div className="space-y-4">
-                              <Skeleton className="h-12 w-full" />
-                              <Skeleton className="h-12 w-full" />
-                              <Skeleton className="h-12 w-full" />
-                          </div>
-                      )}
-                      {!isLoading && date && selectedDayEvents.length > 0 ? (
-                          <ul className="space-y-3">
-                              {selectedDayEvents.sort((a,b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()).map(event => (
-                                  <li key={event.title} className="p-3 bg-card-foreground/5 rounded-lg">
-                                      <p className="font-bold">{event.title}</p>
-                                      <p className="text-sm text-muted-foreground">
-                                          {format(parseISO(event.startTime), 'p')} - {format(parseISO(event.endTime), 'p')}
-                                      </p>
-                                  </li>
-                              ))}
-                          </ul>
-                      ) : !isLoading && date && (
-                          <p>No activities scheduled for this day.</p>
-                      )}
-                  </CardContent>
-              </Card>
-          )}
         </div>
       </main>
     </div>
