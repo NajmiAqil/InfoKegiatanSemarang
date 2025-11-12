@@ -165,8 +165,12 @@ const SchedulePanel = ({ selectedDate, events, onAddEvent }: { selectedDate: Dat
 };
 
 export default function CalendarView() {
-    const [date, setDate] = React.useState<Date | undefined>(new Date());
+    const [date, setDate] = React.useState<Date | undefined>(undefined);
     const [events, setEvents] = React.useState<Event[]>([]);
+
+    React.useEffect(() => {
+        setDate(new Date());
+    }, []);
 
     const scheduledDays = events.map(event => event.date);
 
