@@ -21,8 +21,8 @@ export default function Home() {
               month: 'w-full h-full flex flex-col',
               table: 'w-full h-full',
               head_row: 'flex justify-around',
-              row: 'flex justify-around',
-              day: 'h-16 w-16',
+              row: 'flex justify-around items-center',
+              day: 'h-24 w-16',
             }}
           />
         </CardContent>
