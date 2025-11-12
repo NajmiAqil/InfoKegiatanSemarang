@@ -2,6 +2,7 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
@@ -105,9 +106,11 @@ const Navbar = () => {
       <header className="bg-primary text-primary-foreground p-4 shadow-md">
         <div className="container mx-auto flex justify-between items-center">
           <h1 className="text-2xl font-bold">InfoKegiatanSemarang</h1>
-          <Button>
-            <Plus className="mr-2 h-4 w-4" /> Add Event
-          </Button>
+          <Link href="/login">
+            <Button>
+              Login
+            </Button>
+          </Link>
         </div>
       </header>
     );
@@ -131,7 +134,7 @@ export default function Home() {
                 classNames={{
                   months: "w-full",
                   month: "w-full space-y-2 p-3",
-                  caption: "flex justify-center text-3xl font-bold relative items-center mb-4",
+                  caption: "flex justify-center text-3xl font-bold relative items-center",
                   nav: "space-x-1 flex items-center",
                   nav_button: "h-8 w-8",
                   nav_button_previous: "absolute left-1",
@@ -140,16 +143,16 @@ export default function Home() {
                   head_row: "grid grid-cols-7",
                   head_cell: "text-center text-sm font-normal text-muted-foreground w-full",
                   row: "grid grid-cols-7",
-                  day: "h-12 w-full p-0 text-base flex items-center justify-center",
+                  day: "h-10 w-full p-0 text-base flex items-center justify-center",
                   cell: "text-center",
                 }}
                 modifiers={{
                   scheduled: scheduledDays,
                 }}
                 modifiersStyles={{
-                  scheduled: { 
+                  scheduled: {
                     color: 'white',
-                    backgroundColor: '#2563eb' 
+                    backgroundColor: '#2563eb'
                   },
                 }}
               />
