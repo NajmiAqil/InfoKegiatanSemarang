@@ -21,12 +21,14 @@ export default function Home() {
               root: "p-0",
               months: "w-full",
               month: "w-full space-y-4",
-              caption: "flex justify-start text-xl font-medium pl-1",
-              nav: "hidden",
-              head_row: "grid grid-cols-7 border-b pb-2",
+              caption: "flex justify-center text-3xl font-medium relative items-center",
+              nav: "space-x-1 flex items-center",
+              nav_button_previous: "absolute left-1",
+              nav_button_next: "absolute right-1",
+              head_row: "grid grid-cols-7",
               head_cell: "text-center text-sm font-medium text-muted-foreground",
               row: "grid grid-cols-7 w-full mt-4",
-              day: "h-12 w-full p-0 text-base",
+              day: "h-14 w-full p-0 text-base",
               cell: "text-center",
             }}
           />
