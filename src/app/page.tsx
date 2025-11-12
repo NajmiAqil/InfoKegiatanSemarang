@@ -8,6 +8,14 @@ import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 
 const events = [
   {
@@ -15,25 +23,49 @@ const events = [
     title: "Team Meeting",
     time: "10:00 AM",
     tag: "Work",
-    tagColor: "bg-blue-500"
+    tagColor: "bg-blue-500",
+    description: "Weekly team sync to discuss project progress and blockers."
   },
   {
     date: new Date(new Date().setDate(new Date().getDate() + 1)),
     title: "Lunch with Sarah",
     time: "1:00 PM",
     tag: "Personal",
-    tagColor: "bg-green-500"
+    tagColor: "bg-green-500",
+    description: "Catch up with Sarah at the new cafe downtown."
   },
   {
     date: new Date(new Date().setDate(new Date().getDate() + 5)),
     title: "Project Deadline",
     time: "All Day",
     tag: "Work",
-    tagColor: "bg-blue-500"
+    tagColor: "bg-blue-500",
+    description: "Final submission for the Q2 project. Ensure all deliverables are ready."
   },
 ];
 
 const scheduledDays = events.map(event => event.date);
+
+const EventDetailDialog = ({ event, children }: { event: any, children: React.ReactNode }) => {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{event.title}</DialogTitle>
+          <DialogDescription>
+             <Badge className={`${event.tagColor} mt-2`}>{event.tag}</Badge>
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">{event.time}</p>
+            <p>{event.description}</p>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 
 const SchedulePanel = ({ selectedDate }: { selectedDate: Date }) => {
   const dayEvents = events.filter(
@@ -48,13 +80,15 @@ const SchedulePanel = ({ selectedDate }: { selectedDate: Date }) => {
       <CardContent className="space-y-4">
         {dayEvents.length > 0 ? (
           dayEvents.map((event, index) => (
-            <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-secondary">
-              <div>
-                <p className="font-semibold">{event.title}</p>
-                <p className="text-sm text-muted-foreground">{event.time}</p>
+            <EventDetailDialog key={index} event={event}>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-secondary cursor-pointer hover:bg-secondary/80">
+                <div>
+                  <p className="font-semibold">{event.title}</p>
+                  <p className="text-sm text-muted-foreground">{event.time}</p>
+                </div>
+                <Badge className={event.tagColor}>{event.tag}</Badge>
               </div>
-              <Badge className={event.tagColor}>{event.tag}</Badge>
-            </div>
+            </EventDetailDialog>
           ))
         ) : (
           <p className="text-muted-foreground">No events scheduled for this day.</p>
@@ -104,7 +138,7 @@ export default function Home() {
                   head_row: "grid grid-cols-7",
                   head_cell: "text-center text-sm font-normal text-muted-foreground w-full",
                   row: "grid grid-cols-7",
-                  day: "h-14 w-full p-0 text-lg flex items-center justify-center",
+                  day: "h-12 w-full p-0 text-base flex items-center justify-center",
                   cell: "text-center",
                 }}
                 modifiers={{
