@@ -23,9 +23,9 @@ export default function Home() {
               month: "h-full flex flex-col",
               table: "w-full h-full border-collapse flex flex-col",
               head_row: "grid grid-cols-7",
-              head_cell: "text-center",
+              head_cell: "text-center text-xl font-medium",
               row: "grid grid-cols-7 w-full mt-2 flex-1",
-              day: "h-full w-full p-0",
+              day: "h-full w-full p-0 text-lg",
               cell: "text-center",
             }}
           />
