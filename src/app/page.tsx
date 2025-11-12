@@ -53,8 +53,10 @@ const EventDetailDialog = ({ event, children }: { event: any, children: React.Re
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{event.title}</DialogTitle>
-          <DialogDescription>
-             <Badge className={`${event.tagColor} mt-2`}>{event.tag}</Badge>
+          <DialogDescription asChild>
+            <div>
+              <Badge className={`${event.tagColor} mt-2`}>{event.tag}</Badge>
+            </div>
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-2">
