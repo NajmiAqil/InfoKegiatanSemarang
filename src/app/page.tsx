@@ -16,6 +16,7 @@ export default function Home() {
             selected={date}
             onSelect={setDate}
             className="w-full h-full"
+            showOutsideDays={false}
             classNames={{
               months: 'w-full h-full flex',
               month: 'w-full h-full flex flex-col',
