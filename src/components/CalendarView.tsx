@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -77,7 +78,7 @@ export default function CalendarView() {
 
     return (
         <div className="flex flex-1 items-center justify-center p-8 gap-8">
-            <div className="w-full max-w-2xl">
+            <div className="w-full max-w-4xl">
             <Card>
                 <CardContent className="p-0">
                 <Calendar
@@ -87,17 +88,17 @@ export default function CalendarView() {
                     className="p-0"
                     classNames={{
                     months: "w-full",
-                    month: "w-full space-y-2 p-3",
-                    caption: "flex justify-center text-3xl font-bold relative items-center mb-4",
-                    nav: "space-x-1 flex items-center",
-                    nav_button: "h-8 w-8",
-                    nav_button_previous: "absolute left-1",
-                    nav_button_next: "absolute right-1",
+                    month: "w-full space-y-4 p-4",
+                    caption: "flex justify-center text-4xl font-bold relative items-center mb-6",
+                    nav: "space-x-2 flex items-center",
+                    nav_button: "h-10 w-10",
+                    nav_button_previous: "absolute left-2",
+                    nav_button_next: "absolute right-2",
                     table: "w-full border-collapse",
                     head_row: "grid grid-cols-7",
-                    head_cell: "text-center text-sm font-normal text-muted-foreground w-full",
+                    head_cell: "text-center text-base font-normal text-muted-foreground w-full",
                     row: "grid grid-cols-7",
-                    day: "h-9 w-full p-0 text-sm flex items-center justify-center",
+                    day: "h-12 w-full p-0 text-base flex items-center justify-center",
                     cell: "text-center",
                     }}
                     modifiers={{
