@@ -22,7 +22,7 @@ export default function Home() {
               months: "h-full",
               month: "h-full flex flex-col",
               caption_label: "text-4xl font-bold",
-              table: "w-full h-full border-collapse flex flex-col",
+              table: "w-full h-full border-collapse flex flex-col mt-4",
               head_row: "grid grid-cols-7",
               head_cell: "text-center text-2xl font-medium border",
               row: "grid grid-cols-7 w-full mt-2 flex-1",
