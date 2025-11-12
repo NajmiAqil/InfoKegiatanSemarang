@@ -18,15 +18,15 @@ export default function Home() {
             className="w-full h-full"
             showOutsideDays={false}
             classNames={{
-              root: 'h-full',
+              root: "h-full",
               months: "h-full",
               month: "h-full flex flex-col",
               table: "w-full h-full border-collapse flex flex-col",
-              head_row: "flex",
-              head_cell: "flex-1",
-              row: "flex w-full mt-2 flex-1",
+              head_row: "grid grid-cols-7",
+              head_cell: "text-center",
+              row: "grid grid-cols-7 w-full mt-2 flex-1",
               day: "h-full w-full p-0",
-              cell: "flex-1",
+              cell: "text-center",
             }}
           />
         </CardContent>
