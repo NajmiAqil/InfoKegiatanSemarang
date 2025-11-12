@@ -79,15 +79,20 @@ const SchedulePanel = ({ selectedDate }: { selectedDate: Date }) => {
 const Navbar = () => {
     const router = useRouter();
     const [userRole, setUserRole] = React.useState<string | null>(null);
+    const [username, setUsername] = React.useState<string | null>(null);
 
     React.useEffect(() => {
         const role = localStorage.getItem("userRole");
+        const storedUsername = localStorage.getItem("username");
         setUserRole(role);
+        setUsername(storedUsername);
     }, []);
 
     const handleLogout = () => {
         localStorage.removeItem("userRole");
+        localStorage.removeItem("username");
         setUserRole(null);
+        setUsername(null);
         router.push("/");
     };
 
@@ -107,7 +112,7 @@ const Navbar = () => {
             {userRole ? (
                 <div className="flex items-center gap-4">
                     <Button variant="ghost" onClick={handleProfileClick}>
-                        {userRole === 'atasan' ? 'Atasan Page' : 'Bawahan Page'}
+                        Welcome {username}
                     </Button>
                     <Button onClick={handleLogout}>Logout</Button>
                 </div>

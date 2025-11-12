@@ -31,9 +31,11 @@ export default function LoginPage() {
   const handleLogin = () => {
     if (username === "Hanry" && password === "12345") {
       localStorage.setItem("userRole", "atasan");
+      localStorage.setItem("username", username);
       router.push("/atasan");
     } else if (username === "mahes" && password === "12345") {
       localStorage.setItem("userRole", "bawahan");
+      localStorage.setItem("username", username);
       router.push("/bawahan");
     } else {
       toast({
