@@ -20,10 +20,11 @@ export default function Home() {
               months: 'w-full h-full flex',
               month: 'w-full h-full flex flex-col',
               table: 'w-full h-full flex flex-col',
-              head_row: 'flex justify-around py-2',
-              row: 'flex flex-1 justify-around items-center w-full',
+              head_row: 'flex w-full',
+              head_cell: 'flex-1',
+              row: 'flex flex-1 w-full',
               day: 'h-full w-full max-w-none p-0',
-              cell: 'h-full w-full max-w-none',
+              cell: 'flex-1 h-full w-full max-w-none',
             }}
           />
         </CardContent>
