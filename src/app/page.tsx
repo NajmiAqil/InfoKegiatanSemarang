@@ -21,10 +21,10 @@ export default function Home() {
               months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0 h-full",
               month: "space-y-4 h-full flex flex-col",
               table: "w-full h-full border-collapse flex flex-col",
-              head_row: "grid grid-cols-7",
-              row: "grid grid-cols-7 flex-1",
+              head_row: "flex",
+              row: "flex w-full mt-2 flex-1",
               day: "h-full w-full p-0",
-              cell: "w-full h-full",
+              cell: "flex-1",
             }}
           />
         </CardContent>
