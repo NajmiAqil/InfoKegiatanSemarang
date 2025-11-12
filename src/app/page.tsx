@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast"
 import { Calendar } from "@/components/ui/calendar"
 import { format, isSameDay, parseISO } from 'date-fns';
 import type { Activity } from '@/lib/types';
+import { DayPicker, DayProps } from 'react-day-picker';
 
 
 const defaultActivities: Activity[] = [
@@ -59,7 +60,7 @@ export default function Home() {
 
   const scheduledDays = events.map(event => parseISO(event.startTime));
 
-  const DayWithSchedule = ({ date, ...props }: { date: Date } & React.HTMLAttributes<HTMLDivElement>) => {
+  const DayWithSchedule = ({ date, displayMonth, ...props }: DayProps) => {
     const dayEvents = events
       .filter(event => isSameDay(parseISO(event.startTime), date))
       .sort((a,b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
