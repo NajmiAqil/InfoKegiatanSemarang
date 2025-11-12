@@ -18,9 +18,10 @@ export default function Home() {
             className="w-full h-full"
             showOutsideDays={false}
             classNames={{
-              root: "h-full",
+              root: "h-full flex flex-col",
               months: "h-full",
               month: "h-full flex flex-col",
+              caption_label: "text-3xl font-bold",
               table: "w-full h-full border-collapse flex flex-col",
               head_row: "grid grid-cols-7",
               head_cell: "text-center text-xl font-medium",
