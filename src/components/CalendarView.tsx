@@ -257,7 +257,7 @@ export default function CalendarView() {
                 </CardContent>
             </Card>
             </div>
-            {date && <SchedulePanel selectedDate={date} events={filteredEvents} onAddEvent={handleAddEvent} showAddButton={!!currentUser} />}
+            {date && <SchedulePanel selectedDate={date} events={filteredEvents} onAddEvent={handleAddEvent} showAddButton={!!currentUser && isClient} />}
       </div>
     )
 }
