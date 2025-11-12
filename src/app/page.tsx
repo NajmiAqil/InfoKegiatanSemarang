@@ -1,35 +1,89 @@
 "use client"
 
 import * as React from "react"
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { Badge } from "@/components/ui/badge";
+
+const events = [
+  {
+    date: new Date(new Date().setDate(new Date().getDate() + 1)),
+    title: "Team Meeting",
+    time: "10:00 AM",
+    tag: "Work",
+    tagColor: "bg-blue-500"
+  },
+  {
+    date: new Date(new Date().setDate(new Date().getDate() + 1)),
+    title: "Lunch with Sarah",
+    time: "1:00 PM",
+    tag: "Personal",
+    tagColor: "bg-green-500"
+  },
+  {
+    date: new Date(new Date().setDate(new Date().getDate() + 5)),
+    title: "Project Deadline",
+    time: "All Day",
+    tag: "Work",
+    tagColor: "bg-blue-500"
+  },
+];
+
+const SchedulePanel = ({ selectedDate }: { selectedDate: Date }) => {
+  const dayEvents = events.filter(
+    (event) => event.date.toDateString() === selectedDate.toDateString()
+  );
+
+  return (
+    <Card className="w-full max-w-md">
+      <CardHeader>
+        <CardTitle>Schedule for {format(selectedDate, "PPP")}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {dayEvents.length > 0 ? (
+          dayEvents.map((event, index) => (
+            <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-secondary">
+              <div>
+                <p className="font-semibold">{event.title}</p>
+                <p className="text-sm text-muted-foreground">{event.time}</p>
+              </div>
+              <Badge className={event.tagColor}>{event.tag}</Badge>
+            </div>
+          ))
+        ) : (
+          <p className="text-muted-foreground">No events scheduled for this day.</p>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
 
 export default function Home() {
   const [date, setDate] = React.useState<Date | undefined>(new Date())
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24">
-      <Card className="w-full max-w-4xl">
-        <CardContent className="p-6">
+    <main className="flex min-h-screen items-center justify-center p-8 gap-8">
+      {date && <SchedulePanel selectedDate={date} />}
+      <Card className="w-full max-w-2xl">
+        <CardContent className="p-4">
           <Calendar
             mode="single"
             selected={date}
             onSelect={setDate}
-            className="w-full"
-            showOutsideDays={false}
+            className="p-0"
             classNames={{
-              root: "p-0",
               months: "w-full",
-              month: "w-full space-y-4",
-              caption: "flex justify-center text-4xl font-medium relative items-center mb-6",
+              month: "w-full space-y-2",
+              caption: "flex justify-center text-3xl font-medium relative items-center mb-4",
               nav: "space-x-1 flex items-center",
               nav_button: "h-8 w-8",
               nav_button_previous: "absolute left-1",
               nav_button_next: "absolute right-1",
               head_row: "grid grid-cols-7",
-              head_cell: "text-center text-base font-normal text-muted-foreground",
+              head_cell: "text-center text-sm font-normal text-muted-foreground",
               row: "grid grid-cols-7",
-              day: "h-12 w-full p-0 text-base flex items-center justify-center",
+              day: "h-10 w-full p-0 text-sm flex items-center justify-center",
               cell: "text-center",
             }}
           />
