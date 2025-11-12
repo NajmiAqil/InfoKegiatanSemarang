@@ -22,27 +22,11 @@ import { useRouter } from "next/navigation";
 const events = [
   {
     date: new Date(new Date().setDate(new Date().getDate() + 1)),
-    title: "Team Meeting",
-    time: "10:00 AM",
-    tag: "Work",
-    tagColor: "bg-blue-500",
-    description: "Weekly team sync to discuss project progress and blockers."
-  },
-  {
-    date: new Date(new Date().setDate(new Date().getDate() + 1)),
     title: "Lunch with Sarah",
     time: "1:00 PM",
     tag: "Personal",
     tagColor: "bg-green-500",
     description: "Catch up with Sarah at the new cafe downtown."
-  },
-  {
-    date: new Date(new Date().setDate(new Date().getDate() + 5)),
-    title: "Project Deadline",
-    time: "All Day",
-    tag: "Work",
-    tagColor: "bg-blue-500",
-    description: "Final submission for the Q2 project. Ensure all deliverables are ready."
   },
 ];
 
