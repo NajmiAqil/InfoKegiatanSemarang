@@ -17,6 +17,7 @@ import {
   DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { useRouter } from "next/navigation";
 
 const events = [
   {
@@ -102,15 +103,48 @@ const SchedulePanel = ({ selectedDate }: { selectedDate: Date }) => {
 };
 
 const Navbar = () => {
+    const router = useRouter();
+    const [userRole, setUserRole] = React.useState<string | null>(null);
+
+    React.useEffect(() => {
+        const role = localStorage.getItem("userRole");
+        setUserRole(role);
+    }, []);
+
+    const handleLogout = () => {
+        localStorage.removeItem("userRole");
+        setUserRole(null);
+        router.push("/");
+    };
+
+    const handleProfileClick = () => {
+        if(userRole === 'atasan') {
+            router.push('/atasan');
+        } else if (userRole === 'bawahan') {
+            router.push('/bawahan');
+        }
+    }
+
     return (
       <header className="bg-primary text-primary-foreground p-4 shadow-md">
         <div className="container mx-auto flex justify-between items-center">
           <h1 className="text-2xl font-bold">InfoKegiatanSemarang</h1>
-          <Link href="/login">
-            <Button>
-              Login
-            </Button>
-          </Link>
+          <div>
+            {userRole ? (
+                <div className="flex items-center gap-4">
+                    <Button variant="ghost" onClick={handleProfileClick}>
+                        {userRole === 'atasan' ? 'Atasan Page' : 'Bawahan Page'}
+                    </Button>
+                    <Button onClick={handleLogout}>Logout</Button>
+                </div>
+            ) : (
+              <Link href="/login">
+                <Button>
+                  Login
+                </Button>
+              </Link>
+            )}
+          </div>
         </div>
       </header>
     );
@@ -134,16 +168,16 @@ export default function Home() {
                 classNames={{
                   months: "w-full",
                   month: "w-full space-y-2 p-3",
-                  caption: "flex justify-center text-3xl font-bold relative items-center",
+                  caption: "flex justify-center text-3xl font-bold relative items-center mb-4",
                   nav: "space-x-1 flex items-center",
                   nav_button: "h-8 w-8",
                   nav_button_previous: "absolute left-1",
                   nav_button_next: "absolute right-1",
-                  table: "w-full border-collapse mt-4",
+                  table: "w-full border-collapse",
                   head_row: "grid grid-cols-7",
                   head_cell: "text-center text-sm font-normal text-muted-foreground w-full",
                   row: "grid grid-cols-7",
-                  day: "h-10 w-full p-0 text-base flex items-center justify-center",
+                  day: "h-9 w-full p-0 text-sm flex items-center justify-center",
                   cell: "text-center",
                 }}
                 modifiers={{
