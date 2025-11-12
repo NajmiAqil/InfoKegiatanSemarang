@@ -18,16 +18,7 @@ import {
 } from "@/components/ui/dialog"
 import { useRouter } from "next/navigation";
 
-const events = [
-  {
-    date: new Date(new Date().setDate(new Date().getDate() + 1)),
-    title: "Lunch with Sarah",
-    time: "1:00 PM",
-    tag: "Personal",
-    tagColor: "bg-green-500",
-    description: "Catch up with Sarah at the new cafe downtown."
-  },
-];
+const events: { date: Date; title: string; time: string; tag: string; tagColor: string; description: string; }[] = [];
 
 const scheduledDays = events.map(event => event.date);
 
