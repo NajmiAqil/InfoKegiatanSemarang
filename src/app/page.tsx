@@ -10,7 +10,7 @@ export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-24">
       <Card className="w-full max-w-4xl aspect-[16/9]">
-        <CardContent className="p-0 h-full flex items-center justify-center">
+        <CardContent className="p-0 h-full">
           <Calendar
             mode="single"
             selected={date}
@@ -21,10 +21,10 @@ export default function Home() {
               month: 'w-full h-full flex flex-col',
               table: 'w-full h-full flex flex-col',
               head_row: 'flex w-full',
-              head_cell: 'flex-1',
+              head_cell: 'flex-1 text-center',
               row: 'flex flex-1 w-full',
-              day: 'h-full w-full max-w-none p-0',
-              cell: 'flex-1 h-full w-full max-w-none',
+              day: 'h-full w-full p-0',
+              cell: 'flex-1 h-full w-full',
             }}
           />
         </CardContent>
