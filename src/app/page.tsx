@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { Activity, ScheduledEvent } from '@/lib/types';
+import type { ScheduledEvent } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { generateSchedule } from '@/ai/flows/generate-schedule-from-activities';
 import { useToast } from "@/hooks/use-toast"
 import { Calendar } from "@/components/ui/calendar"
 import { format, isSameDay, parseISO } from 'date-fns';
+import type { Activity } from '@/lib/types';
+
 
 const defaultActivities: Activity[] = [
     { description: 'Sarapan dan persiapan', duration: 60, timeOfDay: 'morning', priority: 'high' },
@@ -19,7 +21,6 @@ const defaultActivities: Activity[] = [
     { description: 'Waktu luang', duration: 120, timeOfDay: 'evening', priority: 'low' },
 ];
 
-
 export default function Home() {
   const [events, setEvents] = useState<ScheduledEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -28,13 +29,13 @@ export default function Home() {
   const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
-    // This ensures the component only renders on the client, preventing hydration errors.
     setIsClient(true)
     setDate(new Date());
   }, [])
 
 
   useEffect(() => {
+    if (!isClient) return;
     const handleGenerateSchedule = async () => {
       setIsLoading(true);
       try {
@@ -53,12 +54,12 @@ export default function Home() {
     };
 
     handleGenerateSchedule();
-  }, [toast]);
+  }, [toast, isClient]);
   
 
   const scheduledDays = events.map(event => parseISO(event.startTime));
 
-  const DayWithSchedule = ({ date, displayMonth, ...props }: { date: Date, displayMonth: Date } & React.HTMLAttributes<HTMLDivElement>) => {
+  const DayWithSchedule = ({ date, ...props }: { date: Date } & React.HTMLAttributes<HTMLDivElement>) => {
     const dayEvents = events
       .filter(event => isSameDay(parseISO(event.startTime), date))
       .sort((a,b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
@@ -81,11 +82,10 @@ export default function Home() {
       </div>
     );
   };
-
+  
   if (!isClient) {
     return null;
   }
-
 
   return (
     <div className="min-h-screen bg-background font-body">
