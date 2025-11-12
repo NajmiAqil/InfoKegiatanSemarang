@@ -20,8 +20,13 @@ import { useToast } from "@/hooks/use-toast";
 export default function LoginPage() {
   const [username, setUsername] = React.useState("");
   const [password, setPassword] = React.useState("");
+  const [isClient, setIsClient] = React.useState(false);
   const router = useRouter();
   const { toast } = useToast();
+
+  React.useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const handleLogin = () => {
     if (username === "Hanry" && password === "12345") {
@@ -38,6 +43,10 @@ export default function LoginPage() {
       });
     }
   };
+
+  if (!isClient) {
+    return null;
+  }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background">
