@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -5,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 
 const events = [
   {
@@ -61,48 +64,64 @@ const SchedulePanel = ({ selectedDate }: { selectedDate: Date }) => {
   );
 };
 
+const Navbar = () => {
+    return (
+      <header className="bg-primary text-primary-foreground p-4 shadow-md">
+        <div className="container mx-auto flex justify-between items-center">
+          <h1 className="text-2xl font-bold">InfoKegiatanSemarang</h1>
+          <Button>
+            <Plus className="mr-2 h-4 w-4" /> Add Event
+          </Button>
+        </div>
+      </header>
+    );
+  };
+
 export default function Home() {
   const [date, setDate] = React.useState<Date | undefined>(new Date())
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-8 gap-8">
-      {date && <SchedulePanel selectedDate={date} />}
-      <div className="w-full max-w-2xl">
-        <Card>
-          <CardContent className="p-0">
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={setDate}
-              className="p-0"
-              classNames={{
-                months: "w-full",
-                month: "w-full space-y-2 p-3",
-                caption: "flex justify-center text-3xl font-bold relative items-center mb-4",
-                nav: "space-x-1 flex items-center",
-                nav_button: "h-8 w-8",
-                nav_button_previous: "absolute left-1",
-                nav_button_next: "absolute right-1",
-                table: "w-full border-collapse mt-4",
-                head_row: "grid grid-cols-7",
-                head_cell: "text-center text-sm font-normal text-muted-foreground w-full",
-                row: "grid grid-cols-7",
-                day: "h-14 w-full p-0 text-lg flex items-center justify-center",
-                cell: "text-center",
-              }}
-              modifiers={{
-                scheduled: scheduledDays,
-              }}
-              modifiersStyles={{
-                scheduled: { 
-                  color: 'white',
-                  backgroundColor: '#2563eb' 
-                },
-              }}
-            />
-          </CardContent>
-        </Card>
-      </div>
-    </main>
+    <div className="flex flex-col min-h-screen">
+      <Navbar />
+      <main className="flex flex-1 items-center justify-center p-8 gap-8">
+        <div className="w-full max-w-2xl">
+          <Card>
+            <CardContent className="p-0">
+              <Calendar
+                mode="single"
+                selected={date}
+                onSelect={setDate}
+                className="p-0"
+                classNames={{
+                  months: "w-full",
+                  month: "w-full space-y-2 p-3",
+                  caption: "flex justify-center text-3xl font-bold relative items-center mb-4",
+                  nav: "space-x-1 flex items-center",
+                  nav_button: "h-8 w-8",
+                  nav_button_previous: "absolute left-1",
+                  nav_button_next: "absolute right-1",
+                  table: "w-full border-collapse mt-4",
+                  head_row: "grid grid-cols-7",
+                  head_cell: "text-center text-sm font-normal text-muted-foreground w-full",
+                  row: "grid grid-cols-7",
+                  day: "h-14 w-full p-0 text-lg flex items-center justify-center",
+                  cell: "text-center",
+                }}
+                modifiers={{
+                  scheduled: scheduledDays,
+                }}
+                modifiersStyles={{
+                  scheduled: { 
+                    color: 'white',
+                    backgroundColor: '#2563eb' 
+                  },
+                }}
+              />
+            </CardContent>
+          </Card>
+        </div>
+        {date && <SchedulePanel selectedDate={date} />}
+      </main>
+    </div>
   );
 }
