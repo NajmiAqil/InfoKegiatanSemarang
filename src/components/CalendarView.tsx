@@ -13,13 +13,24 @@ import {
   DialogTitle,
   DialogDescription,
   DialogTrigger,
+  DialogFooter,
+  DialogClose,
 } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
-const events: { date: Date; title: string; time: string; tag: string; tagColor: string; description: string; }[] = [];
+type Event = {
+  date: Date;
+  title: string;
+  time: string;
+  tag: string;
+  tagColor: string;
+  description: string;
+};
 
-const scheduledDays = events.map(event => event.date);
-
-const EventDetailDialog = ({ event, children }: { event: any, children: React.ReactNode }) => {
+const EventDetailDialog = ({ event, children }: { event: Event, children: React.ReactNode }) => {
   return (
     <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
@@ -41,16 +52,96 @@ const EventDetailDialog = ({ event, children }: { event: any, children: React.Re
   );
 };
 
+const AddEventDialog = ({ selectedDate, onAddEvent }: { selectedDate: Date; onAddEvent: (event: Omit<Event, 'date'>) => void }) => {
+  const [title, setTitle] = React.useState("");
+  const [time, setTime] = React.useState("");
+  const [tag, setTag] = React.useState("Meeting");
+  const [description, setDescription] = React.useState("");
+  const [open, setOpen] = React.useState(false);
 
-const SchedulePanel = ({ selectedDate }: { selectedDate: Date }) => {
+  const handleSubmit = () => {
+    if (title && time) {
+      const tagColorMap: { [key: string]: string } = {
+        Meeting: "bg-blue-500",
+        "Personal": "bg-green-500",
+        "Urgent": "bg-red-500",
+      };
+      onAddEvent({
+        title,
+        time,
+        tag,
+        description,
+        tagColor: tagColorMap[tag] || "bg-gray-500",
+      });
+      setTitle("");
+      setTime("");
+      setTag("Meeting");
+      setDescription("");
+      setOpen(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button>Add Event</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Add Event for {format(selectedDate, "PPP")}</DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="title" className="text-right">
+              Title
+            </Label>
+            <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} className="col-span-3" />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="time" className="text-right">
+              Time
+            </Label>
+            <Input id="time" type="time" value={time} onChange={(e) => setTime(e.target.value)} className="col-span-3" />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="tag" className="text-right">
+              Tag
+            </Label>
+            <select id="tag" value={tag} onChange={(e) => setTag(e.target.value)} className="col-span-3 border rounded-md p-2">
+              <option>Meeting</option>
+              <option>Personal</option>
+              <option>Urgent</option>
+            </select>
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="description" className="text-right">
+              Description
+            </Label>
+            <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} className="col-span-3" />
+          </div>
+        </div>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="outline">Cancel</Button>
+          </DialogClose>
+          <Button onClick={handleSubmit}>Save Event</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+
+const SchedulePanel = ({ selectedDate, events, onAddEvent }: { selectedDate: Date; events: Event[]; onAddEvent: (event: Omit<Event, 'date'>) => void }) => {
   const dayEvents = events.filter(
     (event) => event.date.toDateString() === selectedDate.toDateString()
   );
 
   return (
     <Card className="w-full max-w-md">
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Schedule for {format(selectedDate, "PPP")}</CardTitle>
+        <AddEventDialog selectedDate={selectedDate} onAddEvent={onAddEvent} />
       </CardHeader>
       <CardContent className="space-y-4">
         {dayEvents.length > 0 ? (
@@ -74,7 +165,16 @@ const SchedulePanel = ({ selectedDate }: { selectedDate: Date }) => {
 };
 
 export default function CalendarView() {
-    const [date, setDate] = React.useState<Date | undefined>(new Date())
+    const [date, setDate] = React.useState<Date | undefined>(new Date());
+    const [events, setEvents] = React.useState<Event[]>([]);
+
+    const scheduledDays = events.map(event => event.date);
+
+    const handleAddEvent = (newEvent: Omit<Event, 'date'>) => {
+      if (date) {
+        setEvents([...events, { ...newEvent, date: date }]);
+      }
+    };
 
     return (
         <div className="flex flex-1 items-center justify-center p-8 gap-8">
@@ -114,7 +214,7 @@ export default function CalendarView() {
                 </CardContent>
             </Card>
             </div>
-            {date && <SchedulePanel selectedDate={date} />}
+            {date && <SchedulePanel selectedDate={date} events={events} onAddEvent={handleAddEvent} />}
       </div>
     )
 }
