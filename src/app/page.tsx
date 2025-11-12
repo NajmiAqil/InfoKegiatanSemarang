@@ -18,10 +18,12 @@ export default function Home() {
             className="w-full h-full"
             showOutsideDays={false}
             classNames={{
-              months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0 h-full",
-              month: "space-y-4 h-full flex flex-col",
+              root: 'h-full',
+              months: "h-full",
+              month: "h-full flex flex-col",
               table: "w-full h-full border-collapse flex flex-col",
               head_row: "flex",
+              head_cell: "flex-1",
               row: "flex w-full mt-2 flex-1",
               day: "h-full w-full p-0",
               cell: "flex-1",
