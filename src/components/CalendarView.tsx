@@ -29,6 +29,7 @@ type Event = {
   tagColor: string;
   description: string;
   visibility: 'public' | 'private';
+  createdBy: string | null;
 };
 
 const EventDetailDialog = ({ event, children }: { event: Event, children: React.ReactNode }) => {
@@ -47,13 +48,14 @@ const EventDetailDialog = ({ event, children }: { event: Event, children: React.
         <div className="space-y-2">
             <p className="text-sm text-muted-foreground">{event.time}</p>
             <p>{event.description}</p>
+            {event.createdBy && <p className="text-xs text-muted-foreground">Created by: {event.createdBy}</p>}
         </div>
       </DialogContent>
     </Dialog>
   );
 };
 
-const AddEventDialog = ({ selectedDate, onAddEvent }: { selectedDate: Date; onAddEvent: (event: Omit<Event, 'date'>) => void }) => {
+const AddEventDialog = ({ selectedDate, onAddEvent }: { selectedDate: Date; onAddEvent: (event: Omit<Event, 'date' | 'createdBy'>) => void }) => {
   const [title, setTitle] = React.useState("");
   const [time, setTime] = React.useState("");
   const [tag, setTag] = React.useState("Meeting");
@@ -145,16 +147,16 @@ const AddEventDialog = ({ selectedDate, onAddEvent }: { selectedDate: Date; onAd
 };
 
 
-const SchedulePanel = ({ selectedDate, events, onAddEvent }: { selectedDate: Date; events: Event[]; onAddEvent: (event: Omit<Event, 'date'>) => void }) => {
+const SchedulePanel = ({ selectedDate, events, onAddEvent, showAddButton }: { selectedDate: Date; events: Event[]; onAddEvent: (event: Omit<Event, 'date' | 'createdBy'>) => void, showAddButton: boolean }) => {
   const dayEvents = events.filter(
-    (event) => event.date.toDateString() === selectedDate.toDateString()
+    (event) => new Date(event.date).toDateString() === selectedDate.toDateString()
   );
 
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Schedule for {format(selectedDate, "PPP")}</CardTitle>
-        <AddEventDialog selectedDate={selectedDate} onAddEvent={onAddEvent} />
+        {showAddButton && <AddEventDialog selectedDate={selectedDate} onAddEvent={onAddEvent} />}
       </CardHeader>
       <CardContent className="space-y-4">
         {dayEvents.length > 0 ? (
@@ -180,18 +182,42 @@ const SchedulePanel = ({ selectedDate, events, onAddEvent }: { selectedDate: Dat
 export default function CalendarView() {
     const [date, setDate] = React.useState<Date | undefined>(undefined);
     const [events, setEvents] = React.useState<Event[]>([]);
+    const [currentUser, setCurrentUser] = React.useState<string|null>(null);
+    const [isClient, setIsClient] = React.useState(false);
 
     React.useEffect(() => {
+        setIsClient(true);
+        const storedUser = localStorage.getItem("username");
+        setCurrentUser(storedUser);
+
+        const storedEvents = localStorage.getItem("events");
+        if (storedEvents) {
+            const parsedEvents = JSON.parse(storedEvents).map((e: any) => ({...e, date: new Date(e.date)}));
+            setEvents(parsedEvents);
+        }
         setDate(new Date());
     }, []);
 
-    const scheduledDays = events.map(event => event.date);
-
-    const handleAddEvent = (newEvent: Omit<Event, 'date'>) => {
+    const handleAddEvent = (newEvent: Omit<Event, 'date' | 'createdBy'>) => {
       if (date) {
-        setEvents([...events, { ...newEvent, date: date }]);
+        const fullEvent: Event = { ...newEvent, date: date, createdBy: currentUser };
+        const updatedEvents = [...events, fullEvent];
+        setEvents(updatedEvents);
+        localStorage.setItem("events", JSON.stringify(updatedEvents));
       }
     };
+    
+    const scheduledDays = events.map(event => new Date(event.date));
+
+    const filteredEvents = React.useMemo(() => {
+        if (!isClient) return [];
+        // On homepage (no user), show only public events
+        if (!currentUser) {
+            return events.filter(e => e.visibility === 'public');
+        }
+        // On user pages, show public events and private events created by the user
+        return events.filter(e => e.visibility === 'public' || (e.visibility === 'private' && e.createdBy === currentUser));
+    }, [events, currentUser, isClient]);
 
     return (
         <div className="flex flex-1 items-center justify-center p-8 gap-8">
@@ -231,7 +257,7 @@ export default function CalendarView() {
                 </CardContent>
             </Card>
             </div>
-            {date && <SchedulePanel selectedDate={date} events={events} onAddEvent={handleAddEvent} />}
+            {date && <SchedulePanel selectedDate={date} events={filteredEvents} onAddEvent={handleAddEvent} showAddButton={!!currentUser} />}
       </div>
     )
 }
