@@ -28,6 +28,7 @@ export default function Home() {
   const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
+    // This ensures the component only renders on the client, preventing hydration errors.
     setIsClient(true)
     setDate(new Date());
   }, [])
@@ -57,7 +58,7 @@ export default function Home() {
 
   const scheduledDays = events.map(event => parseISO(event.startTime));
 
-  const DayWithSchedule = ({ date, ...props }: { date: Date } & React.HTMLAttributes<HTMLDivElement>) => {
+  const DayWithSchedule = ({ date, displayMonth, ...props }: { date: Date, displayMonth: Date } & React.HTMLAttributes<HTMLDivElement>) => {
     const dayEvents = events
       .filter(event => isSameDay(parseISO(event.startTime), date))
       .sort((a,b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
