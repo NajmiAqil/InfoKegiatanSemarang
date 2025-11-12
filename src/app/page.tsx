@@ -30,6 +30,8 @@ const events = [
   },
 ];
 
+const scheduledDays = events.map(event => event.date);
+
 const SchedulePanel = ({ selectedDate }: { selectedDate: Date }) => {
   const dayEvents = events.filter(
     (event) => event.date.toDateString() === selectedDate.toDateString()
@@ -65,30 +67,42 @@ export default function Home() {
   return (
     <main className="flex min-h-screen items-center justify-center p-8 gap-8">
       {date && <SchedulePanel selectedDate={date} />}
-      <Card className="w-full max-w-2xl">
-        <CardContent className="p-4">
-          <Calendar
-            mode="single"
-            selected={date}
-            onSelect={setDate}
-            className="p-0"
-            classNames={{
-              months: "w-full",
-              month: "w-full space-y-2",
-              caption: "flex justify-center text-3xl font-medium relative items-center mb-4",
-              nav: "space-x-1 flex items-center",
-              nav_button: "h-8 w-8",
-              nav_button_previous: "absolute left-1",
-              nav_button_next: "absolute right-1",
-              head_row: "grid grid-cols-7",
-              head_cell: "text-center text-sm font-normal text-muted-foreground",
-              row: "grid grid-cols-7",
-              day: "h-10 w-full p-0 text-sm flex items-center justify-center",
-              cell: "text-center",
-            }}
-          />
-        </CardContent>
-      </Card>
+      <div className="w-full max-w-2xl">
+        <Card>
+          <CardContent className="p-0">
+            <Calendar
+              mode="single"
+              selected={date}
+              onSelect={setDate}
+              className="p-0"
+              classNames={{
+                months: "w-full",
+                month: "w-full space-y-2 p-3",
+                caption: "flex justify-center text-3xl font-bold relative items-center mb-4",
+                nav: "space-x-1 flex items-center",
+                nav_button: "h-8 w-8",
+                nav_button_previous: "absolute left-1",
+                nav_button_next: "absolute right-1",
+                table: "w-full border-collapse mt-4",
+                head_row: "grid grid-cols-7",
+                head_cell: "text-center text-sm font-normal text-muted-foreground w-full",
+                row: "grid grid-cols-7",
+                day: "h-14 w-full p-0 text-lg flex items-center justify-center",
+                cell: "text-center",
+              }}
+              modifiers={{
+                scheduled: scheduledDays,
+              }}
+              modifiersStyles={{
+                scheduled: { 
+                  color: 'white',
+                  backgroundColor: '#2563eb' 
+                },
+              }}
+            />
+          </CardContent>
+        </Card>
+      </div>
     </main>
   );
 }
