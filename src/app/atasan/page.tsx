@@ -2,9 +2,9 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import CalendarView from "@/components/CalendarView";
 
 const Navbar = ({ onLogout, username }: { onLogout: () => void; username: string | null }) => {
   return (
@@ -49,8 +49,8 @@ export default function AtasanPage() {
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar onLogout={handleLogout} username={username} />
-      <main className="flex-1 flex items-center justify-center">
-        <h2 className="text-3xl font-bold">Welcome, Atasan!</h2>
+      <main className="flex-1 flex">
+        <CalendarView />
       </main>
     </div>
   );
