@@ -290,25 +290,33 @@ const ScheduleTable = ({ events }: { events: Event[] }) => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Time</TableHead>
-              <TableHead>Title</TableHead>
-              <TableHead>Tag</TableHead>
+              <TableHead>No</TableHead>
+              <TableHead>Nama Kegiatan</TableHead>
+              <TableHead>Tanggal</TableHead>
+              <TableHead>Jam Mulai</TableHead>
+              <TableHead>Jam Berakhir</TableHead>
+              <TableHead>Lokasi</TableHead>
+              <TableHead>Berkaitan</TableHead>
+              <TableHead>Deskripsi</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {upcomingEvents.length > 0 ? (
-              upcomingEvents.filter(event => event && event.id).map((event) => (
+              upcomingEvents.filter(event => event && event.id).map((event, index) => (
                 <TableRow key={event.id}>
+                  <TableCell>{index + 1}</TableCell>
+                  <TableCell>{event.title}</TableCell>
                   <TableCell>{format(new Date(event.date), "PPP")}</TableCell>
                   <TableCell>{event.startTime}</TableCell>
-                  <TableCell>{event.title}</TableCell>
-                  <TableCell><Badge className={event.tagColor}>{event.tag}</Badge></TableCell>
+                  <TableCell>{event.endTime}</TableCell>
+                  <TableCell>{event.location}</TableCell>
+                  <TableCell>{event.relatedPeople}</TableCell>
+                  <TableCell>{event.description}</TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={4} className="text-center">
+                <TableCell colSpan={8} className="text-center">
                   No upcoming events.
                 </TableCell>
               </TableRow>
@@ -335,14 +343,14 @@ export default function CalendarView({ viewedUser }: { viewedUser?: string | nul
         setCurrentUser(storedUser);
         setUserRole(storedRole);
 
-        const storedEvents = localStorage.getItem("events_v2");
+        const storedEvents = localStorage.getItem("events_v3");
         if (storedEvents) {
             try {
                 const parsedEvents = JSON.parse(storedEvents).map((e: any) => ({...e, date: new Date(e.date)}));
                 setEvents(parsedEvents);
             } catch (error) {
                 console.error("Could not parse events, starting fresh.", error);
-                localStorage.removeItem("events_v2");
+                localStorage.removeItem("events_v3");
             }
         }
         setDate(new Date());
@@ -354,35 +362,34 @@ export default function CalendarView({ viewedUser }: { viewedUser?: string | nul
         const fullEvent: Event = { ...newEvent, id: uniqueId, date: date, createdBy: currentUser };
         const updatedEvents = [...events, fullEvent];
         setEvents(updatedEvents);
-        localStorage.setItem("events_v2", JSON.stringify(updatedEvents));
+        localStorage.setItem("events_v3", JSON.stringify(updatedEvents));
       }
     };
 
     const handleDeleteEvent = (eventId: string) => {
         const updatedEvents = events.filter(event => event.id !== eventId);
         setEvents(updatedEvents);
-        localStorage.setItem("events_v2", JSON.stringify(updatedEvents));
+        localStorage.setItem("events_v3", JSON.stringify(updatedEvents));
     };
     
     const filteredEvents = React.useMemo(() => {
         if (!isClient) return [];
+        
+        // Scenario 1: Logged out user (public view)
+        if (!currentUser) {
+            return events.filter(e => e.visibility === 'public');
+        }
 
-        const viewingOwn = !viewedUser || viewedUser === currentUser;
-
-        if (userRole === 'atasan' && !viewingOwn) {
-            // Atasan is viewing a specific subordinate's schedule
-            return events.filter(e => e.visibility === 'public' || e.createdBy === viewedUser);
+        // Scenario 2: Atasan viewing a subordinate
+        if (userRole === 'atasan' && viewedUser && viewedUser !== currentUser) {
+            return events.filter(e => e.createdBy === viewedUser || e.visibility === 'public');
         }
         
-        if (currentUser) {
-            // Logged-in user viewing their own schedule (or public if no specific user is viewed)
-            return events.filter(e => e.visibility === 'public' || e.createdBy === currentUser);
-        }
+        // Scenario 3: Any logged in user viewing their own schedule (or the general public view if no user is specified)
+        return events.filter(e => e.visibility === 'public' || e.createdBy === currentUser);
 
-        // Public view (not logged in)
-        return events.filter(e => e.visibility === 'public');
+    }, [events, currentUser, userRole, viewedUser, isClient]);
 
-    }, [events, currentUser, isClient, viewedUser, userRole]);
 
     const scheduledDays = React.useMemo(() => {
         if (!isClient) return [];
@@ -447,3 +454,6 @@ export default function CalendarView({ viewedUser }: { viewedUser?: string | nul
       </div>
     )
 }
+
+
+    
