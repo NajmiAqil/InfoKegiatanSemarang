@@ -13,13 +13,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
@@ -27,12 +20,11 @@ import { useToast } from "@/hooks/use-toast";
 export default function SignupPage() {
   const [username, setUsername] = React.useState("");
   const [password, setPassword] = React.useState("");
-  const [role, setRole] = React.useState<"atasan" | "bawahan" | "">("");
   const router = useRouter();
   const { toast } = useToast();
 
   const handleSignUp = () => {
-    if (!username || !password || !role) {
+    if (!username || !password) {
       toast({
         variant: "destructive",
         title: "Registration Failed",
@@ -54,7 +46,7 @@ export default function SignupPage() {
       return;
     }
 
-    users.push({ username, password, role });
+    users.push({ username, password, role: "bawahan" });
     localStorage.setItem("users", JSON.stringify(users));
 
     toast({
@@ -96,18 +88,6 @@ export default function SignupPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="role">Role</Label>
-            <Select onValueChange={(value) => setRole(value as any)} value={role}>
-              <SelectTrigger id="role">
-                <SelectValue placeholder="Select a role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="atasan">Atasan</SelectItem>
-                <SelectItem value="bawahan">Bawahan</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
