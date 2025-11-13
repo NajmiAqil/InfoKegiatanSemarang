@@ -24,7 +24,13 @@ const Navbar = ({ onLogout, username }: { onLogout: () => void; username: string
   );
 };
 
-const AtasanPageContent = () => {
+const CloseButton = () => {
+    const { setOpenMobile } = useSidebar();
+    return <Button onClick={() => setOpenMobile(false)}>Close</Button>;
+}
+
+
+export default function AtasanPage() {
     const router = useRouter();
     const [userRole, setUserRole] = React.useState<string | null>(null);
     const [username, setUsername] = React.useState<string | null>(null);
@@ -54,8 +60,8 @@ const AtasanPageContent = () => {
     }
 
     return (
-        <div className="flex flex-col min-h-screen">
-            <Sidebar>
+        <SidebarProvider defaultOpen={false}>
+             <Sidebar variant="floating">
                 <SidebarContent>
                     <SidebarMenu>
                         <SidebarMenuItem>
@@ -67,6 +73,9 @@ const AtasanPageContent = () => {
                         </SidebarMenuButton>
                         </SidebarMenuItem>
                     </SidebarMenu>
+                    <div className="p-4">
+                       <CloseButton />
+                    </div>
                 </SidebarContent>
             </Sidebar>
             <SidebarInset>
@@ -75,14 +84,6 @@ const AtasanPageContent = () => {
                     <CalendarView />
                 </main>
             </SidebarInset>
-        </div>
+        </SidebarProvider>
     )
-}
-
-export default function AtasanPage() {
-  return (
-    <SidebarProvider defaultOpen={false}>
-        <AtasanPageContent />
-    </SidebarProvider>
-  )
 }
