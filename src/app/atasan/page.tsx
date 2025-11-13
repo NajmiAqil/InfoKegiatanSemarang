@@ -24,7 +24,7 @@ const Navbar = ({ onLogout, username }: { onLogout: () => void; username: string
   );
 };
 
-export default function AtasanPage() {
+function AtasanPageContent() {
   const router = useRouter();
   const [userRole, setUserRole] = React.useState<string | null>(null);
   const [username, setUsername] = React.useState<string | null>(null);
@@ -49,36 +49,43 @@ export default function AtasanPage() {
     router.push("/");
   };
 
-  if (!isClient || !userRole) {
+  if (!isClient || userRole !== 'atasan') {
     return null; // Or a loading spinner
   }
+  
+  return (
+    <div className="flex flex-col min-h-screen">
+      <Navbar onLogout={handleLogout} username={username} />
+      <div className="flex flex-1">
+        <Sidebar>
+          <SidebarContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton>
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback>M</AvatarFallback>
+                  </Avatar>
+                  <span>mahes</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarContent>
+        </Sidebar>
+        <SidebarInset>
+          <main className="flex-1 flex">
+            <CalendarView />
+          </main>
+        </SidebarInset>
+      </div>
+    </div>
+  )
+}
 
+
+export default function AtasanPage() {
   return (
     <SidebarProvider>
-        <div className="flex flex-col min-h-screen">
-            <Navbar onLogout={handleLogout} username={username} />
-            <div className="flex flex-1">
-                <Sidebar>
-                    <SidebarContent>
-                        <SidebarMenu>
-                            <SidebarMenuItem>
-                                <SidebarMenuButton>
-                                    <Avatar className="h-8 w-8">
-                                        <AvatarFallback>M</AvatarFallback>
-                                    </Avatar>
-                                    <span>mahes</span>
-                                </SidebarMenuButton>
-                            </SidebarMenuItem>
-                        </SidebarMenu>
-                    </SidebarContent>
-                </Sidebar>
-                <SidebarInset>
-                    <main className="flex-1 flex">
-                        <CalendarView />
-                    </main>
-                </SidebarInset>
-            </div>
-        </div>
+      <AtasanPageContent />
     </SidebarProvider>
   );
 }
