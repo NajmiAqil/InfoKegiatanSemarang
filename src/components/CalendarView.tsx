@@ -241,17 +241,20 @@ const ScheduleTable = ({ events }: { events: Event[] }) => {
   );
 };
 
-export default function CalendarView() {
+export default function CalendarView({ viewedUser }: { viewedUser?: string | null }) {
     const [date, setDate] = React.useState<Date | undefined>(undefined);
     const [events, setEvents] = React.useState<Event[]>([]);
     const [currentUser, setCurrentUser] = React.useState<string|null>(null);
+    const [userRole, setUserRole] = React.useState<string|null>(null);
     const [isClient, setIsClient] = React.useState(false);
     const [viewMode, setViewMode] = React.useState<'calendar' | 'table'>('calendar');
 
     React.useEffect(() => {
         setIsClient(true);
         const storedUser = localStorage.getItem("username");
+        const storedRole = localStorage.getItem("userRole");
         setCurrentUser(storedUser);
+        setUserRole(storedRole);
 
         const storedEvents = localStorage.getItem("events");
         if (storedEvents) {
@@ -272,27 +275,32 @@ export default function CalendarView() {
     
     const filteredEvents = React.useMemo(() => {
         if (!isClient) return [];
-        // On homepage (no user), show only public events
-        if (!currentUser) {
+        
+        // Atasan viewing a specific Bawahan's schedule
+        if (userRole === 'atasan' && viewedUser && viewedUser !== currentUser) {
+            return events.filter(e => e.createdBy === viewedUser);
+        }
+
+        // Default view for any user (or public view)
+        const targetUser = viewedUser || currentUser;
+        if (!targetUser) {
             return events.filter(e => e.visibility === 'public');
         }
-        // On user pages, show public events and private events created by the user
-        return events.filter(e => e.visibility === 'public' || (e.visibility === 'private' && e.createdBy === currentUser));
-    }, [events, currentUser, isClient]);
+        
+        return events.filter(e => e.visibility === 'public' || (e.visibility === 'private' && e.createdBy === targetUser));
+
+    }, [events, currentUser, isClient, viewedUser, userRole]);
 
     const scheduledDays = React.useMemo(() => {
         if (!isClient) return [];
-        const publicEvents = events.filter(e => e.visibility === 'public');
-        
-        if (!currentUser) {
-            return publicEvents.map(event => new Date(event.date));
-        }
         return filteredEvents.map(event => new Date(event.date));
-    }, [events, filteredEvents, currentUser, isClient]);
+    }, [filteredEvents, isClient]);
 
     if (!isClient) {
         return null;
     }
+    
+    const showAddButton = !!currentUser && (!viewedUser || viewedUser === currentUser);
 
     return (
         <div className="flex flex-1 flex-col items-center justify-center gap-8 w-full">
@@ -338,7 +346,7 @@ export default function CalendarView() {
                             </CardContent>
                         </Card>
                     </div>
-                    {date && <SchedulePanel selectedDate={date} events={filteredEvents} onAddEvent={handleAddEvent} showAddButton={!!currentUser && isClient} />}
+                    {date && <SchedulePanel selectedDate={date} events={filteredEvents} onAddEvent={handleAddEvent} showAddButton={showAddButton} />}
                 </div>
             ) : (
                 <ScheduleTable events={filteredEvents} />
@@ -346,5 +354,3 @@ export default function CalendarView() {
       </div>
     )
 }
-
-    

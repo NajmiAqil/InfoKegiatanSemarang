@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import CalendarView from "@/components/CalendarView";
 import { Sidebar, SidebarProvider, SidebarTrigger, SidebarInset, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, useSidebar } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Home } from "lucide-react";
 
 const Navbar = ({ onLogout, username }: { onLogout: () => void; username: string | null }) => {
   return (
@@ -29,6 +30,8 @@ export default function AtasanPage() {
     const [userRole, setUserRole] = React.useState<string | null>(null);
     const [username, setUsername] = React.useState<string | null>(null);
     const [isClient, setIsClient] = React.useState(false);
+    const [selectedUser, setSelectedUser] = React.useState<string | null>(null);
+
 
     React.useEffect(() => {
         setIsClient(true);
@@ -36,8 +39,9 @@ export default function AtasanPage() {
         const storedUsername = localStorage.getItem("username");
         setUserRole(role);
         setUsername(storedUsername);
+        setSelectedUser(storedUsername); // Default to viewing own schedule
         if (role !== "atasan") {
-        router.push("/login");
+            router.push("/login");
         }
     }, [router]);
 
@@ -58,8 +62,14 @@ export default function AtasanPage() {
              <Sidebar variant="floating">
                 <SidebarContent>
                     <SidebarMenu>
+                         <SidebarMenuItem>
+                            <SidebarMenuButton onClick={() => setSelectedUser(username)}>
+                                <Home />
+                                <span>My Schedule</span>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
                         <SidebarMenuItem>
-                        <SidebarMenuButton>
+                        <SidebarMenuButton onClick={() => setSelectedUser('mahes')}>
                             <Avatar className="h-8 w-8">
                             <AvatarFallback>M</AvatarFallback>
                             </Avatar>
@@ -72,7 +82,7 @@ export default function AtasanPage() {
             <SidebarInset>
                 <Navbar onLogout={handleLogout} username={username} />
                 <main className="flex-1 flex p-4">
-                    <CalendarView />
+                    <CalendarView viewedUser={selectedUser} />
                 </main>
             </SidebarInset>
         </SidebarProvider>
