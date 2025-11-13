@@ -24,12 +24,6 @@ const Navbar = ({ onLogout, username }: { onLogout: () => void; username: string
   );
 };
 
-const CloseButton = () => {
-    const { setOpenMobile } = useSidebar();
-    return <Button onClick={() => setOpenMobile(false)}>Close</Button>;
-}
-
-
 export default function AtasanPage() {
     const router = useRouter();
     const [userRole, setUserRole] = React.useState<string | null>(null);
@@ -73,9 +67,6 @@ export default function AtasanPage() {
                         </SidebarMenuButton>
                         </SidebarMenuItem>
                     </SidebarMenu>
-                    <div className="p-4">
-                       <CloseButton />
-                    </div>
                 </SidebarContent>
             </Sidebar>
             <SidebarInset>
