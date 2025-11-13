@@ -209,7 +209,7 @@ const SchedulePanel = ({ selectedDate, events, onAddEvent, onDeleteEvent, showAd
       </CardHeader>
       <CardContent className="space-y-4">
         {dayEvents.length > 0 ? (
-          dayEvents.map((event) => (
+          dayEvents.filter(event => event && event.id).map((event) => (
              <EventItem key={event.id} event={event} onDelete={onDeleteEvent} currentUser={currentUser} />
           ))
         ) : (
@@ -245,7 +245,7 @@ const ScheduleTable = ({ events }: { events: Event[] }) => {
           </TableHeader>
           <TableBody>
             {upcomingEvents.length > 0 ? (
-              upcomingEvents.map((event) => (
+              upcomingEvents.filter(event => event && event.id).map((event) => (
                 <TableRow key={event.id}>
                   <TableCell>{format(new Date(event.date), "PPP")}</TableCell>
                   <TableCell>{event.startTime}</TableCell>
@@ -292,7 +292,8 @@ export default function CalendarView({ viewedUser }: { viewedUser?: string | nul
 
     const handleAddEvent = (newEvent: Omit<Event, 'id' | 'date' | 'createdBy'>) => {
       if (date) {
-        const fullEvent: Event = { ...newEvent, id: Date.now().toString(), date: date, createdBy: currentUser };
+        const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const fullEvent: Event = { ...newEvent, id: uniqueId, date: date, createdBy: currentUser };
         const updatedEvents = [...events, fullEvent];
         setEvents(updatedEvents);
         localStorage.setItem("events", JSON.stringify(updatedEvents));
