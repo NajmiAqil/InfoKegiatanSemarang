@@ -5,12 +5,17 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import CalendarView from "@/components/CalendarView";
+import { Sidebar, SidebarProvider, SidebarTrigger, SidebarInset, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const Navbar = ({ onLogout, username }: { onLogout: () => void; username: string | null }) => {
   return (
     <header className="bg-primary text-primary-foreground p-4 shadow-md">
       <div className="container mx-auto flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Welcome {username}</h1>
+        <div className="flex items-center gap-4">
+            <SidebarTrigger />
+            <h1 className="text-2xl font-bold">Welcome {username}</h1>
+        </div>
         <div>
           <Button onClick={onLogout}>Logout</Button>
         </div>
@@ -47,11 +52,31 @@ export default function AtasanPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <Navbar onLogout={handleLogout} username={username} />
-      <main className="flex-1 flex">
-        <CalendarView />
-      </main>
-    </div>
+    <SidebarProvider>
+        <div className="flex flex-col min-h-screen">
+            <Navbar onLogout={handleLogout} username={username} />
+            <div className="flex flex-1">
+                <Sidebar>
+                    <SidebarContent>
+                        <SidebarMenu>
+                            <SidebarMenuItem>
+                                <SidebarMenuButton>
+                                    <Avatar className="h-8 w-8">
+                                        <AvatarFallback>M</AvatarFallback>
+                                    </Avatar>
+                                    <span>mahes</span>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                        </SidebarMenu>
+                    </SidebarContent>
+                </Sidebar>
+                <SidebarInset>
+                    <main className="flex-1 flex">
+                        <CalendarView />
+                    </main>
+                </SidebarInset>
+            </div>
+        </div>
+    </SidebarProvider>
   );
 }
