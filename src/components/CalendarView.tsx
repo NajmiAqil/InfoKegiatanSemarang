@@ -32,7 +32,8 @@ import { Textarea } from "@/components/ui/textarea";
 type Event = {
   date: Date;
   title: string;
-  time: string;
+  startTime: string;
+  endTime: string;
   tag: string;
   tagColor: string;
   description: string;
@@ -54,7 +55,7 @@ const EventDetailDialog = ({ event, children }: { event: Event, children: React.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">{event.time}</p>
+            <p className="text-sm text-muted-foreground">{event.startTime} - {event.endTime}</p>
             <p>{event.description}</p>
             {event.createdBy && <p className="text-xs text-muted-foreground">Created by: {event.createdBy}</p>}
         </div>
@@ -65,14 +66,15 @@ const EventDetailDialog = ({ event, children }: { event: Event, children: React.
 
 const AddEventDialog = ({ selectedDate, onAddEvent }: { selectedDate: Date; onAddEvent: (event: Omit<Event, 'date' | 'createdBy'>) => void }) => {
   const [title, setTitle] = React.useState("");
-  const [time, setTime] = React.useState("");
+  const [startTime, setStartTime] = React.useState("");
+  const [endTime, setEndTime] = React.useState("");
   const [tag, setTag] = React.useState("Meeting");
   const [description, setDescription] = React.useState("");
   const [visibility, setVisibility] = React.useState<'public' | 'private'>('public');
   const [open, setOpen] = React.useState(false);
 
   const handleSubmit = () => {
-    if (title && time) {
+    if (title && startTime && endTime) {
       const tagColorMap: { [key: string]: string } = {
         Meeting: "bg-blue-500",
         "Personal": "bg-green-500",
@@ -80,14 +82,16 @@ const AddEventDialog = ({ selectedDate, onAddEvent }: { selectedDate: Date; onAd
       };
       onAddEvent({
         title,
-        time,
+        startTime,
+        endTime,
         tag,
         description,
         visibility,
         tagColor: tagColorMap[tag] || "bg-gray-500",
       });
       setTitle("");
-      setTime("");
+      setStartTime("");
+      setEndTime("");
       setTag("Meeting");
       setDescription("");
       setVisibility("public");
@@ -112,10 +116,16 @@ const AddEventDialog = ({ selectedDate, onAddEvent }: { selectedDate: Date; onAd
             <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} className="col-span-3" />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="time" className="text-right">
-              Time
+            <Label htmlFor="startTime" className="text-right">
+              Start Time
             </Label>
-            <Input id="time" type="time" value={time} onChange={(e) => setTime(e.target.value)} className="col-span-3" />
+            <Input id="startTime" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="col-span-3" />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="endTime" className="text-right">
+              End Time
+            </Label>
+            <Input id="endTime" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="col-span-3" />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="tag" className="text-right">
@@ -173,7 +183,7 @@ const SchedulePanel = ({ selectedDate, events, onAddEvent, showAddButton }: { se
               <div className="flex items-center justify-between p-3 rounded-lg bg-secondary cursor-pointer hover:bg-secondary/80">
                 <div>
                   <p className="font-semibold">{event.title}</p>
-                  <p className="text-sm text-muted-foreground">{event.time}</p>
+                  <p className="text-sm text-muted-foreground">{event.startTime} - {event.endTime}</p>
                 </div>
                 <Badge className={event.tagColor}>{event.tag}</Badge>
               </div>
@@ -188,7 +198,7 @@ const SchedulePanel = ({ selectedDate, events, onAddEvent, showAddButton }: { se
 };
 
 const ScheduleTable = ({ events }: { events: Event[] }) => {
-  const todayEvents = events
+    const todayEvents = events
     .filter(event => new Date(event.date).toDateString() === new Date().toDateString())
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
@@ -212,7 +222,7 @@ const ScheduleTable = ({ events }: { events: Event[] }) => {
               todayEvents.map((event, index) => (
                 <TableRow key={index}>
                   <TableCell>{format(new Date(event.date), "PPP")}</TableCell>
-                  <TableCell>{event.time}</TableCell>
+                  <TableCell>{event.startTime}</TableCell>
                   <TableCell>{event.title}</TableCell>
                   <TableCell><Badge className={event.tagColor}>{event.tag}</Badge></TableCell>
                 </TableRow>
@@ -336,7 +346,5 @@ export default function CalendarView() {
       </div>
     )
 }
-
-    
 
     
