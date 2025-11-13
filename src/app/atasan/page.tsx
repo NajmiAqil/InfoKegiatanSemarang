@@ -47,7 +47,7 @@ export default function AtasanPage() {
     router.push("/");
   };
 
-  if (!userRole) {
+  if (typeof window === 'undefined' || !userRole) {
     return null; // Or a loading spinner
   }
 
