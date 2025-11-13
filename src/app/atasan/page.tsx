@@ -7,7 +7,6 @@ import { useRouter } from "next/navigation";
 import CalendarView from "@/components/CalendarView";
 import { Sidebar, SidebarProvider, SidebarTrigger, SidebarInset, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, useSidebar } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { SidebarFooter } from "@/components/ui/sidebar";
 
 const Navbar = ({ onLogout, username }: { onLogout: () => void; username: string | null }) => {
   return (
@@ -26,7 +25,6 @@ const Navbar = ({ onLogout, username }: { onLogout: () => void; username: string
 };
 
 const AtasanPageContent = () => {
-    const { setOpen } = useSidebar();
     const router = useRouter();
     const [userRole, setUserRole] = React.useState<string | null>(null);
     const [username, setUsername] = React.useState<string | null>(null);
@@ -57,7 +55,7 @@ const AtasanPageContent = () => {
 
     return (
         <div className="flex flex-col min-h-screen">
-            <Sidebar variant="floating">
+            <Sidebar>
                 <SidebarContent>
                     <SidebarMenu>
                         <SidebarMenuItem>
@@ -70,13 +68,10 @@ const AtasanPageContent = () => {
                         </SidebarMenuItem>
                     </SidebarMenu>
                 </SidebarContent>
-                <SidebarFooter>
-                    <Button variant="outline" onClick={() => setOpen(false)}>Close</Button>
-                </SidebarFooter>
             </Sidebar>
             <SidebarInset>
                 <Navbar onLogout={handleLogout} username={username} />
-                <main className="flex-1 flex">
+                <main className="flex-1 flex p-4">
                     <CalendarView />
                 </main>
             </SidebarInset>
