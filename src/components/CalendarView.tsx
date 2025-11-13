@@ -16,6 +16,14 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -179,11 +187,56 @@ const SchedulePanel = ({ selectedDate, events, onAddEvent, showAddButton }: { se
   );
 };
 
+const ScheduleTable = ({ events }: { events: Event[] }) => {
+  const upcomingEvents = events
+    .filter(event => new Date(event.date) >= new Date())
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  return (
+    <Card className="w-full max-w-4xl">
+      <CardHeader>
+        <CardTitle>Upcoming Schedules</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Date</TableHead>
+              <TableHead>Time</TableHead>
+              <TableHead>Title</TableHead>
+              <TableHead>Tag</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {upcomingEvents.length > 0 ? (
+              upcomingEvents.map((event, index) => (
+                <TableRow key={index}>
+                  <TableCell>{format(new Date(event.date), "PPP")}</TableCell>
+                  <TableCell>{event.time}</TableCell>
+                  <TableCell>{event.title}</TableCell>
+                  <TableCell><Badge className={event.tagColor}>{event.tag}</Badge></TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={4} className="text-center">
+                  No upcoming events.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+};
+
 export default function CalendarView() {
     const [date, setDate] = React.useState<Date | undefined>(undefined);
     const [events, setEvents] = React.useState<Event[]>([]);
     const [currentUser, setCurrentUser] = React.useState<string|null>(null);
     const [isClient, setIsClient] = React.useState(false);
+    const [viewMode, setViewMode] = React.useState<'calendar' | 'table'>('calendar');
 
     React.useEffect(() => {
         setIsClient(true);
@@ -219,52 +272,69 @@ export default function CalendarView() {
 
     const scheduledDays = React.useMemo(() => {
         if (!isClient) return [];
+        const publicEvents = events.filter(e => e.visibility === 'public');
+        
+        if (!currentUser) {
+            return publicEvents.map(event => new Date(event.date));
+        }
         return filteredEvents.map(event => new Date(event.date));
-    }, [filteredEvents, isClient]);
+    }, [events, filteredEvents, currentUser, isClient]);
 
     if (!isClient) {
         return null;
     }
 
     return (
-        <div className="flex flex-1 items-center justify-center p-8 gap-8">
-            <div className="w-full max-w-4xl">
-            <Card>
-                <CardContent className="p-0">
-                <Calendar
-                    mode="single"
-                    selected={date}
-                    onSelect={setDate}
-                    className="p-0"
-                    classNames={{
-                    months: "w-full",
-                    month: "w-full space-y-4 p-4",
-                    caption: "flex justify-center text-4xl font-bold relative items-center mb-6",
-                    nav: "space-x-2 flex items-center",
-                    nav_button: "h-10 w-10",
-                    nav_button_previous: "absolute left-2",
-                    nav_button_next: "absolute right-2",
-                    table: "w-full border-collapse",
-                    head_row: "grid grid-cols-7",
-                    head_cell: "text-center text-base font-normal text-muted-foreground w-full",
-                    row: "grid grid-cols-7",
-                    day: "h-12 w-full p-0 text-base flex items-center justify-center",
-                    cell: "text-center",
-                    }}
-                    modifiers={{
-                    scheduled: scheduledDays,
-                    }}
-                    modifiersStyles={{
-                    scheduled: {
-                        color: 'white',
-                        backgroundColor: '#2563eb'
-                    },
-                    }}
-                />
-                </CardContent>
-            </Card>
+        <div className="flex flex-1 flex-col items-center justify-center p-8 gap-8 w-full">
+            <div className="flex justify-center gap-2 mb-4">
+                <Button variant={viewMode === 'calendar' ? 'default' : 'outline'} onClick={() => setViewMode('calendar')}>Calendar</Button>
+                <Button variant={viewMode === 'table' ? 'default' : 'outline'} onClick={() => setViewMode('table')}>Table</Button>
             </div>
-            {date && <SchedulePanel selectedDate={date} events={filteredEvents} onAddEvent={handleAddEvent} showAddButton={!!currentUser && isClient} />}
+            {viewMode === 'calendar' ? (
+                <div className="flex w-full items-start justify-center gap-8">
+                    <div className="w-full max-w-4xl">
+                        <Card>
+                            <CardContent className="p-0">
+                            <Calendar
+                                mode="single"
+                                selected={date}
+                                onSelect={setDate}
+                                className="p-0"
+                                classNames={{
+                                months: "w-full",
+                                month: "w-full space-y-4 p-4",
+                                caption: "flex justify-center text-4xl font-bold relative items-center mb-6",
+                                nav: "space-x-2 flex items-center",
+                                nav_button: "h-10 w-10",
+                                nav_button_previous: "absolute left-2",
+                                nav_button_next: "absolute right-2",
+                                table: "w-full border-collapse",
+                                head_row: "grid grid-cols-7",
+                                head_cell: "text-center text-base font-normal text-muted-foreground w-full",
+                                row: "grid grid-cols-7",
+                                day: "h-12 w-full p-0 text-base flex items-center justify-center",
+                                cell: "text-center",
+                                }}
+                                modifiers={{
+                                scheduled: scheduledDays,
+                                }}
+                                modifiersStyles={{
+                                scheduled: {
+                                    color: 'white',
+                                    backgroundColor: '#2563eb'
+                                },
+                                }}
+                            />
+                            </CardContent>
+                        </Card>
+                    </div>
+                    {date && <SchedulePanel selectedDate={date} events={filteredEvents} onAddEvent={handleAddEvent} showAddButton={!!currentUser && isClient} />}
+                </div>
+            ) : (
+                <ScheduleTable events={filteredEvents} />
+            )}
       </div>
     )
 }
+
+    
