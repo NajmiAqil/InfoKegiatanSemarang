@@ -17,6 +17,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 
+const defaultUsers = [
+  { username: "Hanry", password: "12345", role: "atasan" },
+  { username: "mahes", password: "12345", role: "bawahan" },
+];
+
 export default function LoginPage() {
   const [username, setUsername] = React.useState("");
   const [password, setPassword] = React.useState("");
@@ -29,14 +34,23 @@ export default function LoginPage() {
   }, []);
 
   const handleLogin = () => {
-    if (username === "Hanry" && password === "12345") {
-      localStorage.setItem("userRole", "atasan");
-      localStorage.setItem("username", username);
-      router.push("/atasan");
-    } else if (username === "mahes" && password === "12345") {
-      localStorage.setItem("userRole", "bawahan");
-      localStorage.setItem("username", username);
-      router.push("/bawahan");
+    const storedUsers = localStorage.getItem("users");
+    const allUsers = storedUsers
+      ? [...defaultUsers, ...JSON.parse(storedUsers)]
+      : defaultUsers;
+
+    const user = allUsers.find(
+      (u) => u.username === username && u.password === password
+    );
+
+    if (user) {
+      localStorage.setItem("userRole", user.role);
+      localStorage.setItem("username", user.username);
+      if (user.role === "atasan") {
+        router.push("/atasan");
+      } else {
+        router.push("/bawahan");
+      }
     } else {
       toast({
         variant: "destructive",
@@ -93,7 +107,7 @@ export default function LoginPage() {
             </Link>
             <div className="mt-4 text-center text-sm">
               Don&apos;t have an account?{" "}
-              <Link href="#" className="underline">
+              <Link href="/signup" className="underline">
                 Sign up
               </Link>
             </div>
