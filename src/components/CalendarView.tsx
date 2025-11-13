@@ -361,19 +361,20 @@ export default function CalendarView({ viewedUser }: { viewedUser?: string | nul
     
     const filteredEvents = React.useMemo(() => {
         if (!isClient) return [];
-        
+
         // Atasan viewing a specific Bawahan's schedule
         if (userRole === 'atasan' && viewedUser && viewedUser !== currentUser) {
-            return events.filter(e => e.createdBy === viewedUser);
+            // Show all events created by the viewedUser, plus all public events
+             return events.filter(e => e.createdBy === viewedUser || e.visibility === 'public');
         }
 
-        // Default view for any user (or public view)
-        const targetUser = viewedUser || currentUser;
-        if (!targetUser) {
-            return events.filter(e => e.visibility === 'public');
+        // Logged-in user viewing their own schedule (or public view)
+        if (currentUser) {
+             return events.filter(e => e.visibility === 'public' || e.createdBy === currentUser);
         }
-        
-        return events.filter(e => e.visibility === 'public' || (e.visibility === 'private' && e.createdBy === targetUser) || (e.createdBy === currentUser));
+
+        // Public view (not logged in)
+        return events.filter(e => e.visibility === 'public');
 
     }, [events, currentUser, isClient, viewedUser, userRole]);
 
@@ -440,7 +441,3 @@ export default function CalendarView({ viewedUser }: { viewedUser?: string | nul
       </div>
     )
 }
-
-    
-
-    
