@@ -30,6 +30,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 type Event = {
+  id: string;
   date: Date;
   title: string;
   startTime: string;
@@ -41,9 +42,18 @@ type Event = {
   createdBy: string | null;
 };
 
-const EventDetailDialog = ({ event, children }: { event: Event, children: React.ReactNode }) => {
+const EventDetailDialog = ({ event, children, onDelete, currentUser }: { event: Event, children: React.ReactNode, onDelete: (eventId: string) => void, currentUser: string | null }) => {
+  const [open, setOpen] = React.useState(false);
+
+  const canDelete = event.createdBy === currentUser && currentUser !== null;
+
+  const handleDelete = () => {
+    onDelete(event.id);
+    setOpen(false);
+  }
+
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -59,12 +69,17 @@ const EventDetailDialog = ({ event, children }: { event: Event, children: React.
             <p>{event.description}</p>
             {event.createdBy && <p className="text-xs text-muted-foreground">Created by: {event.createdBy}</p>}
         </div>
+        {canDelete && (
+          <DialogFooter>
+            <Button variant="destructive" onClick={handleDelete}>Delete</Button>
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );
 };
 
-const AddEventDialog = ({ selectedDate, onAddEvent }: { selectedDate: Date; onAddEvent: (event: Omit<Event, 'date' | 'createdBy'>) => void }) => {
+const AddEventDialog = ({ selectedDate, onAddEvent }: { selectedDate: Date; onAddEvent: (event: Omit<Event, 'id' | 'date' | 'createdBy'>) => void }) => {
   const [title, setTitle] = React.useState("");
   const [startTime, setStartTime] = React.useState("");
   const [endTime, setEndTime] = React.useState("");
@@ -165,7 +180,7 @@ const AddEventDialog = ({ selectedDate, onAddEvent }: { selectedDate: Date; onAd
 };
 
 
-const SchedulePanel = ({ selectedDate, events, onAddEvent, showAddButton }: { selectedDate: Date; events: Event[]; onAddEvent: (event: Omit<Event, 'date' | 'createdBy'>) => void, showAddButton: boolean }) => {
+const SchedulePanel = ({ selectedDate, events, onAddEvent, onDeleteEvent, showAddButton, currentUser }: { selectedDate: Date; events: Event[]; onAddEvent: (event: Omit<Event, 'id' |'date' | 'createdBy'>) => void, onDeleteEvent: (eventId: string) => void, showAddButton: boolean, currentUser: string | null }) => {
   const dayEvents = events.filter(
     (event) => new Date(event.date).toDateString() === selectedDate.toDateString()
   );
@@ -178,8 +193,8 @@ const SchedulePanel = ({ selectedDate, events, onAddEvent, showAddButton }: { se
       </CardHeader>
       <CardContent className="space-y-4">
         {dayEvents.length > 0 ? (
-          dayEvents.map((event, index) => (
-            <EventDetailDialog key={index} event={event}>
+          dayEvents.map((event) => (
+            <EventDetailDialog key={event.id} event={event} onDelete={onDeleteEvent} currentUser={currentUser}>
               <div className="flex items-center justify-between p-3 rounded-lg bg-secondary cursor-pointer hover:bg-secondary/80">
                 <div>
                   <p className="font-semibold">{event.title}</p>
@@ -222,8 +237,8 @@ const ScheduleTable = ({ events }: { events: Event[] }) => {
           </TableHeader>
           <TableBody>
             {upcomingEvents.length > 0 ? (
-              upcomingEvents.map((event, index) => (
-                <TableRow key={index}>
+              upcomingEvents.map((event) => (
+                <TableRow key={event.id}>
                   <TableCell>{format(new Date(event.date), "PPP")}</TableCell>
                   <TableCell>{event.startTime}</TableCell>
                   <TableCell>{event.title}</TableCell>
@@ -267,13 +282,19 @@ export default function CalendarView({ viewedUser }: { viewedUser?: string | nul
         setDate(new Date());
     }, []);
 
-    const handleAddEvent = (newEvent: Omit<Event, 'date' | 'createdBy'>) => {
+    const handleAddEvent = (newEvent: Omit<Event, 'id' | 'date' | 'createdBy'>) => {
       if (date) {
-        const fullEvent: Event = { ...newEvent, date: date, createdBy: currentUser };
+        const fullEvent: Event = { ...newEvent, id: Date.now().toString(), date: date, createdBy: currentUser };
         const updatedEvents = [...events, fullEvent];
         setEvents(updatedEvents);
         localStorage.setItem("events", JSON.stringify(updatedEvents));
       }
+    };
+
+    const handleDeleteEvent = (eventId: string) => {
+        const updatedEvents = events.filter(event => event.id !== eventId);
+        setEvents(updatedEvents);
+        localStorage.setItem("events", JSON.stringify(updatedEvents));
     };
     
     const filteredEvents = React.useMemo(() => {
@@ -290,7 +311,7 @@ export default function CalendarView({ viewedUser }: { viewedUser?: string | nul
             return events.filter(e => e.visibility === 'public');
         }
         
-        return events.filter(e => e.visibility === 'public' || (e.visibility === 'private' && e.createdBy === targetUser));
+        return events.filter(e => e.visibility === 'public' || (e.visibility === 'private' && e.createdBy === targetUser) || (e.createdBy === currentUser));
 
     }, [events, currentUser, isClient, viewedUser, userRole]);
 
@@ -349,7 +370,7 @@ export default function CalendarView({ viewedUser }: { viewedUser?: string | nul
                             </CardContent>
                         </Card>
                     </div>
-                    {date && <SchedulePanel selectedDate={date} events={filteredEvents} onAddEvent={handleAddEvent} showAddButton={showAddButton} />}
+                    {date && <SchedulePanel selectedDate={date} events={filteredEvents} onAddEvent={handleAddEvent} onDeleteEvent={handleDeleteEvent} showAddButton={showAddButton} currentUser={currentUser}/>}
                 </div>
             ) : (
                 <ScheduleTable events={filteredEvents} />
