@@ -10,11 +10,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const Navbar = ({ onLogout, username }: { onLogout: () => void; username: string | null }) => {
   return (
-    <header className="bg-primary text-primary-foreground p-4 shadow-md">
+    <header className="bg-primary text-primary-foreground px-4 py-2 shadow-md">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-4">
             <SidebarTrigger />
-            <h1 className="text-2xl font-bold">Welcome {username}</h1>
+            <h1 className="text-xl font-bold">Welcome {username}</h1>
         </div>
         <div>
           <Button onClick={onLogout}>Logout</Button>
@@ -55,30 +55,28 @@ export default function AtasanPage() {
   
   return (
     <SidebarProvider defaultOpen={false}>
-      <div className="flex flex-col min-h-screen">
-        <Navbar onLogout={handleLogout} username={username} />
-        <div className="flex flex-1">
-          <Sidebar>
-            <SidebarContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton>
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback>M</AvatarFallback>
-                    </Avatar>
-                    <span>mahes</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarContent>
-          </Sidebar>
-          <SidebarInset>
-            <main className="flex-1 flex">
-              <CalendarView />
-            </main>
-          </SidebarInset>
+        <div className="flex flex-col min-h-screen">
+            <Sidebar variant="floating">
+                <SidebarContent>
+                <SidebarMenu>
+                    <SidebarMenuItem>
+                    <SidebarMenuButton>
+                        <Avatar className="h-8 w-8">
+                        <AvatarFallback>M</AvatarFallback>
+                        </Avatar>
+                        <span>mahes</span>
+                    </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarMenu>
+                </SidebarContent>
+            </Sidebar>
+            <SidebarInset>
+                <Navbar onLogout={handleLogout} username={username} />
+                <main className="flex-1 flex">
+                    <CalendarView />
+                </main>
+            </SidebarInset>
         </div>
-      </div>
     </SidebarProvider>
   )
 }
