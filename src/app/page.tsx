@@ -61,11 +61,18 @@ const Navbar = () => {
   };
 
 export default function Home() {
+    const [isClient, setIsClient] = React.useState(false)
+
+    React.useEffect(() => {
+        setIsClient(true)
+    }, [])
+
+
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
       <main className="flex flex-1">
-        <CalendarView />
+        {isClient && <CalendarView />}
       </main>
     </div>
   );

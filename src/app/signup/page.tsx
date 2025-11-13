@@ -20,8 +20,13 @@ import { useToast } from "@/hooks/use-toast";
 export default function SignupPage() {
   const [username, setUsername] = React.useState("");
   const [password, setPassword] = React.useState("");
+  const [isClient, setIsClient] = React.useState(false);
   const router = useRouter();
   const { toast } = useToast();
+
+    React.useEffect(() => {
+        setIsClient(true);
+    }, []);
 
   const handleSignUp = () => {
     if (!username || !password) {
@@ -56,6 +61,10 @@ export default function SignupPage() {
 
     router.push("/login");
   };
+
+    if (!isClient) {
+        return null;
+    }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background">
