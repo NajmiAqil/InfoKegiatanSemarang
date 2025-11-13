@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 const Navbar = ({ onLogout, username }: { onLogout: () => void; username: string | null }) => {
   return (
     <header className="bg-primary text-primary-foreground p-4 shadow-md">
-      <div className="container mx-auto flex justify-between items-center">
+      <div className="flex justify-between items-center">
         <div className="flex items-center gap-4">
             <SidebarTrigger />
             <h1 className="text-2xl font-bold">Welcome {username}</h1>

@@ -285,7 +285,7 @@ export default function CalendarView() {
     }
 
     return (
-        <div className="flex flex-1 flex-col items-center justify-center p-8 gap-8 w-full">
+        <div className="flex flex-1 flex-col items-center justify-center gap-8 w-full">
             <div className="flex justify-center gap-2 mb-4">
                 <Button variant={viewMode === 'calendar' ? 'default' : 'outline'} onClick={() => setViewMode('calendar')}>Calendar</Button>
                 <Button variant={viewMode === 'table' ? 'default' : 'outline'} onClick={() => setViewMode('table')}>Table</Button>

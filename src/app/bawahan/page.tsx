@@ -9,7 +9,7 @@ import CalendarView from "@/components/CalendarView";
 const Navbar = ({ onLogout, username }: { onLogout: () => void; username: string | null }) => {
   return (
     <header className="bg-primary text-primary-foreground p-4 shadow-md">
-      <div className="container mx-auto flex justify-between items-center">
+      <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Welcome {username}</h1>
         <div>
           <Button onClick={onLogout}>Logout</Button>
