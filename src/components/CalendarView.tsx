@@ -378,3 +378,5 @@ export default function CalendarView({ viewedUser }: { viewedUser?: string | nul
       </div>
     )
 }
+
+    
