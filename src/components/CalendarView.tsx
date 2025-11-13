@@ -198,14 +198,17 @@ const SchedulePanel = ({ selectedDate, events, onAddEvent, showAddButton }: { se
 };
 
 const ScheduleTable = ({ events }: { events: Event[] }) => {
-    const todayEvents = events
-    .filter(event => new Date(event.date).toDateString() === new Date().toDateString())
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const upcomingEvents = events
+    .filter(event => new Date(event.date) >= today)
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   return (
     <Card className="w-full max-w-4xl">
       <CardHeader>
-        <CardTitle>Today&apos;s Schedules</CardTitle>
+        <CardTitle>Upcoming Schedules</CardTitle>
       </CardHeader>
       <CardContent>
         <Table>
@@ -218,8 +221,8 @@ const ScheduleTable = ({ events }: { events: Event[] }) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {todayEvents.length > 0 ? (
-              todayEvents.map((event, index) => (
+            {upcomingEvents.length > 0 ? (
+              upcomingEvents.map((event, index) => (
                 <TableRow key={index}>
                   <TableCell>{format(new Date(event.date), "PPP")}</TableCell>
                   <TableCell>{event.startTime}</TableCell>
@@ -230,7 +233,7 @@ const ScheduleTable = ({ events }: { events: Event[] }) => {
             ) : (
               <TableRow>
                 <TableCell colSpan={4} className="text-center">
-                  No events for today.
+                  No upcoming events.
                 </TableCell>
               </TableRow>
             )}
@@ -354,3 +357,5 @@ export default function CalendarView({ viewedUser }: { viewedUser?: string | nul
       </div>
     )
 }
+
+    
