@@ -28,8 +28,10 @@ export default function AtasanPage() {
   const router = useRouter();
   const [userRole, setUserRole] = React.useState<string | null>(null);
   const [username, setUsername] = React.useState<string | null>(null);
+  const [isClient, setIsClient] = React.useState(false);
 
   React.useEffect(() => {
+    setIsClient(true);
     const role = localStorage.getItem("userRole");
     const storedUsername = localStorage.getItem("username");
     setUserRole(role);
@@ -47,7 +49,7 @@ export default function AtasanPage() {
     router.push("/");
   };
 
-  if (typeof window === 'undefined' || !userRole) {
+  if (!isClient || !userRole) {
     return null; // Or a loading spinner
   }
 
