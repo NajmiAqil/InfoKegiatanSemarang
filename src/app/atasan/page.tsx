@@ -24,7 +24,7 @@ const Navbar = ({ onLogout, username }: { onLogout: () => void; username: string
   );
 };
 
-function AtasanPageContent() {
+export default function AtasanPage() {
   const router = useRouter();
   const [userRole, setUserRole] = React.useState<string | null>(null);
   const [username, setUsername] = React.useState<string | null>(null);
@@ -54,38 +54,31 @@ function AtasanPageContent() {
   }
   
   return (
-    <div className="flex flex-col min-h-screen">
-      <Navbar onLogout={handleLogout} username={username} />
-      <div className="flex flex-1">
-        <Sidebar>
-          <SidebarContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton>
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback>M</AvatarFallback>
-                  </Avatar>
-                  <span>mahes</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarContent>
-        </Sidebar>
-        <SidebarInset>
-          <main className="flex-1 flex">
-            <CalendarView />
-          </main>
-        </SidebarInset>
-      </div>
-    </div>
-  )
-}
-
-
-export default function AtasanPage() {
-  return (
     <SidebarProvider>
-      <AtasanPageContent />
+      <div className="flex flex-col min-h-screen">
+        <Navbar onLogout={handleLogout} username={username} />
+        <div className="flex flex-1">
+          <Sidebar>
+            <SidebarContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton>
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback>M</AvatarFallback>
+                    </Avatar>
+                    <span>mahes</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarContent>
+          </Sidebar>
+          <SidebarInset>
+            <main className="flex-1 flex">
+              <CalendarView />
+            </main>
+          </SidebarInset>
+        </div>
+      </div>
     </SidebarProvider>
-  );
+  )
 }
