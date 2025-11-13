@@ -54,7 +54,7 @@ export default function AtasanPage() {
   }
   
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={false}>
       <div className="flex flex-col min-h-screen">
         <Navbar onLogout={handleLogout} username={username} />
         <div className="flex flex-1">
