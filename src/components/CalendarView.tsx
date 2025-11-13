@@ -79,6 +79,22 @@ const EventDetailDialog = ({ event, children, onDelete, currentUser }: { event: 
   );
 };
 
+
+const EventItem = ({ event, onDelete, currentUser }: { event: Event, onDelete: (eventId: string) => void, currentUser: string | null }) => {
+  return (
+    <EventDetailDialog event={event} onDelete={onDelete} currentUser={currentUser}>
+      <div className="flex items-center justify-between p-3 rounded-lg bg-secondary cursor-pointer hover:bg-secondary/80">
+        <div>
+          <p className="font-semibold">{event.title}</p>
+          <p className="text-sm text-muted-foreground">{event.startTime} - {event.endTime}</p>
+        </div>
+        <Badge className={event.tagColor}>{event.tag}</Badge>
+      </div>
+    </EventDetailDialog>
+  );
+};
+
+
 const AddEventDialog = ({ selectedDate, onAddEvent }: { selectedDate: Date; onAddEvent: (event: Omit<Event, 'id' | 'date' | 'createdBy'>) => void }) => {
   const [title, setTitle] = React.useState("");
   const [startTime, setStartTime] = React.useState("");
@@ -194,17 +210,7 @@ const SchedulePanel = ({ selectedDate, events, onAddEvent, onDeleteEvent, showAd
       <CardContent className="space-y-4">
         {dayEvents.length > 0 ? (
           dayEvents.map((event) => (
-            <div key={event.id}>
-              <EventDetailDialog event={event} onDelete={onDeleteEvent} currentUser={currentUser}>
-                <div className="flex items-center justify-between p-3 rounded-lg bg-secondary cursor-pointer hover:bg-secondary/80">
-                  <div>
-                    <p className="font-semibold">{event.title}</p>
-                    <p className="text-sm text-muted-foreground">{event.startTime} - {event.endTime}</p>
-                  </div>
-                  <Badge className={event.tagColor}>{event.tag}</Badge>
-                </div>
-              </EventDetailDialog>
-            </div>
+             <EventItem key={event.id} event={event} onDelete={onDeleteEvent} currentUser={currentUser} />
           ))
         ) : (
           <p className="text-muted-foreground">No events scheduled for this day.</p>
@@ -380,3 +386,5 @@ export default function CalendarView({ viewedUser }: { viewedUser?: string | nul
       </div>
     )
 }
+
+    
