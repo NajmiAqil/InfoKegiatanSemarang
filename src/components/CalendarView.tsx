@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import * as React from "react"
@@ -40,6 +41,9 @@ type Event = {
   description: string;
   visibility: 'public' | 'private';
   createdBy: string | null;
+  repeat: string;
+  location: string;
+  relatedPeople: string;
 };
 
 const EventDetailDialog = ({ event, children, onDelete, currentUser }: { event: Event, children: React.ReactNode, onDelete: (eventId: string) => void, currentUser: string | null }) => {
@@ -64,10 +68,25 @@ const EventDetailDialog = ({ event, children, onDelete, currentUser }: { event: 
             </div>
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-2">
+        <div className="space-y-4">
             <p className="text-sm text-muted-foreground">{event.startTime} - {event.endTime}</p>
-            <p>{event.description}</p>
-            {event.createdBy && <p className="text-xs text-muted-foreground">Created by: {event.createdBy}</p>}
+            <div>
+                <h4 className="font-semibold">Description:</h4>
+                <p>{event.description || "No description."}</p>
+            </div>
+             <div>
+                <h4 className="font-semibold">Location:</h4>
+                <p>{event.location || "Not specified."}</p>
+            </div>
+            <div>
+                <h4 className="font-semibold">Repeats:</h4>
+                <p>{event.repeat}</p>
+            </div>
+            <div>
+                <h4 className="font-semibold">Related People:</h4>
+                <p>{event.relatedPeople || "None."}</p>
+            </div>
+            {event.createdBy && <p className="text-xs text-muted-foreground pt-4">Created by: {event.createdBy}</p>}
         </div>
         {canDelete && (
           <DialogFooter>
@@ -102,6 +121,10 @@ const AddEventDialog = ({ selectedDate, onAddEvent }: { selectedDate: Date; onAd
   const [tag, setTag] = React.useState("Meeting");
   const [description, setDescription] = React.useState("");
   const [visibility, setVisibility] = React.useState<'public' | 'private'>('public');
+  const [repeat, setRepeat] = React.useState("Never");
+  const [location, setLocation] = React.useState("");
+  const [relatedPeople, setRelatedPeople] = React.useState("");
+
   const [open, setOpen] = React.useState(false);
 
   const handleSubmit = () => {
@@ -119,13 +142,20 @@ const AddEventDialog = ({ selectedDate, onAddEvent }: { selectedDate: Date; onAd
         description,
         visibility,
         tagColor: tagColorMap[tag] || "bg-gray-500",
+        repeat,
+        location,
+        relatedPeople,
       });
+      // Reset fields
       setTitle("");
       setStartTime("");
       setEndTime("");
       setTag("Meeting");
       setDescription("");
       setVisibility("public");
+      setRepeat("Never");
+      setLocation("");
+      setRelatedPeople("");
       setOpen(false);
     }
   };
@@ -135,32 +165,43 @@ const AddEventDialog = ({ selectedDate, onAddEvent }: { selectedDate: Date; onAd
       <DialogTrigger asChild>
         <Button>Add Event</Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Add Event for {format(selectedDate, "PPP")}</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="title" className="text-right">
-              Title
+              Nama Schedule
             </Label>
             <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} className="col-span-3" />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="startTime" className="text-right">
-              Start Time
+              Jam Mulai
             </Label>
             <Input id="startTime" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="col-span-3" />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="endTime" className="text-right">
-              End Time
+              Jam Berakhir
             </Label>
             <Input id="endTime" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="col-span-3" />
           </div>
+           <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="repeat" className="text-right">
+              Ulangi
+            </Label>
+            <select id="repeat" value={repeat} onChange={(e) => setRepeat(e.target.value)} className="col-span-3 border rounded-md p-2">
+              <option>Never</option>
+              <option>Daily</option>
+              <option>Weekly</option>
+              <option>Monthly</option>
+            </select>
+          </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="tag" className="text-right">
-              Tag
+              Type
             </Label>
             <select id="tag" value={tag} onChange={(e) => setTag(e.target.value)} className="col-span-3 border rounded-md p-2">
               <option>Meeting</option>
@@ -170,7 +211,7 @@ const AddEventDialog = ({ selectedDate, onAddEvent }: { selectedDate: Date; onAd
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="visibility" className="text-right">
-              Visibility
+              Publish or Private
             </Label>
             <select id="visibility" value={visibility} onChange={(e) => setVisibility(e.target.value as 'public' | 'private')} className="col-span-3 border rounded-md p-2">
               <option value="public">Public</option>
@@ -178,10 +219,22 @@ const AddEventDialog = ({ selectedDate, onAddEvent }: { selectedDate: Date; onAd
             </select>
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="location" className="text-right">
+              Lokasi
+            </Label>
+            <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} className="col-span-3" />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="description" className="text-right">
-              Description
+              Deskripsi
             </Label>
             <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} className="col-span-3" />
+          </div>
+           <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="relatedPeople" className="text-right">
+              Orang yang Berkaitan
+            </Label>
+            <Input id="relatedPeople" value={relatedPeople} onChange={(e) => setRelatedPeople(e.target.value)} className="col-span-3" />
           </div>
         </div>
         <DialogFooter>
@@ -387,5 +440,7 @@ export default function CalendarView({ viewedUser }: { viewedUser?: string | nul
       </div>
     )
 }
+
+    
 
     
