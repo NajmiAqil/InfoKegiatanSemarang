@@ -335,10 +335,15 @@ export default function CalendarView({ viewedUser }: { viewedUser?: string | nul
         setCurrentUser(storedUser);
         setUserRole(storedRole);
 
-        const storedEvents = localStorage.getItem("events");
+        const storedEvents = localStorage.getItem("events_v2");
         if (storedEvents) {
-            const parsedEvents = JSON.parse(storedEvents).map((e: any) => ({...e, date: new Date(e.date)}));
-            setEvents(parsedEvents);
+            try {
+                const parsedEvents = JSON.parse(storedEvents).map((e: any) => ({...e, date: new Date(e.date)}));
+                setEvents(parsedEvents);
+            } catch (error) {
+                console.error("Could not parse events, starting fresh.", error);
+                localStorage.removeItem("events_v2");
+            }
         }
         setDate(new Date());
     }, []);
@@ -349,28 +354,29 @@ export default function CalendarView({ viewedUser }: { viewedUser?: string | nul
         const fullEvent: Event = { ...newEvent, id: uniqueId, date: date, createdBy: currentUser };
         const updatedEvents = [...events, fullEvent];
         setEvents(updatedEvents);
-        localStorage.setItem("events", JSON.stringify(updatedEvents));
+        localStorage.setItem("events_v2", JSON.stringify(updatedEvents));
       }
     };
 
     const handleDeleteEvent = (eventId: string) => {
         const updatedEvents = events.filter(event => event.id !== eventId);
         setEvents(updatedEvents);
-        localStorage.setItem("events", JSON.stringify(updatedEvents));
+        localStorage.setItem("events_v2", JSON.stringify(updatedEvents));
     };
     
     const filteredEvents = React.useMemo(() => {
         if (!isClient) return [];
 
-        // Atasan viewing a specific Bawahan's schedule
-        if (userRole === 'atasan' && viewedUser && viewedUser !== currentUser) {
-            // Show all events created by the viewedUser, plus all public events
-             return events.filter(e => e.createdBy === viewedUser || e.visibility === 'public');
-        }
+        const viewingOwn = !viewedUser || viewedUser === currentUser;
 
-        // Logged-in user viewing their own schedule (or public view)
+        if (userRole === 'atasan' && !viewingOwn) {
+            // Atasan is viewing a specific subordinate's schedule
+            return events.filter(e => e.visibility === 'public' || e.createdBy === viewedUser);
+        }
+        
         if (currentUser) {
-             return events.filter(e => e.visibility === 'public' || e.createdBy === currentUser);
+            // Logged-in user viewing their own schedule (or public if no specific user is viewed)
+            return events.filter(e => e.visibility === 'public' || e.createdBy === currentUser);
         }
 
         // Public view (not logged in)
