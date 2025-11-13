@@ -5,8 +5,9 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import CalendarView from "@/components/CalendarView";
-import { Sidebar, SidebarProvider, SidebarTrigger, SidebarInset, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Sidebar, SidebarProvider, SidebarTrigger, SidebarInset, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, useSidebar } from "@/components/ui/sidebar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { SidebarFooter } from "@/components/ui/sidebar";
 
 const Navbar = ({ onLogout, username }: { onLogout: () => void; username: string | null }) => {
   return (
@@ -24,51 +25,54 @@ const Navbar = ({ onLogout, username }: { onLogout: () => void; username: string
   );
 };
 
-export default function AtasanPage() {
-  const router = useRouter();
-  const [userRole, setUserRole] = React.useState<string | null>(null);
-  const [username, setUsername] = React.useState<string | null>(null);
-  const [isClient, setIsClient] = React.useState(false);
+const AtasanPageContent = () => {
+    const { setOpen } = useSidebar();
+    const router = useRouter();
+    const [userRole, setUserRole] = React.useState<string | null>(null);
+    const [username, setUsername] = React.useState<string | null>(null);
+    const [isClient, setIsClient] = React.useState(false);
 
-  React.useEffect(() => {
-    setIsClient(true);
-    const role = localStorage.getItem("userRole");
-    const storedUsername = localStorage.getItem("username");
-    setUserRole(role);
-    setUsername(storedUsername);
-    if (role !== "atasan") {
-      router.push("/login");
+    React.useEffect(() => {
+        setIsClient(true);
+        const role = localStorage.getItem("userRole");
+        const storedUsername = localStorage.getItem("username");
+        setUserRole(role);
+        setUsername(storedUsername);
+        if (role !== "atasan") {
+        router.push("/login");
+        }
+    }, [router]);
+
+    const handleLogout = () => {
+        localStorage.removeItem("userRole");
+        localStorage.removeItem("username");
+        setUserRole(null);
+        setUsername(null);
+        router.push("/");
+    };
+
+    if (!isClient || userRole !== 'atasan') {
+        return null; // Or a loading spinner
     }
-  }, [router]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("userRole");
-    localStorage.removeItem("username");
-    setUserRole(null);
-    setUsername(null);
-    router.push("/");
-  };
-
-  if (!isClient || userRole !== 'atasan') {
-    return null; // Or a loading spinner
-  }
-  
-  return (
-    <SidebarProvider defaultOpen={false}>
+    return (
         <div className="flex flex-col min-h-screen">
             <Sidebar variant="floating">
                 <SidebarContent>
-                <SidebarMenu>
-                    <SidebarMenuItem>
-                    <SidebarMenuButton>
-                        <Avatar className="h-8 w-8">
-                        <AvatarFallback>M</AvatarFallback>
-                        </Avatar>
-                        <span>mahes</span>
-                    </SidebarMenuButton>
-                    </SidebarMenuItem>
-                </SidebarMenu>
+                    <SidebarMenu>
+                        <SidebarMenuItem>
+                        <SidebarMenuButton>
+                            <Avatar className="h-8 w-8">
+                            <AvatarFallback>M</AvatarFallback>
+                            </Avatar>
+                            <span>mahes</span>
+                        </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    </SidebarMenu>
                 </SidebarContent>
+                <SidebarFooter>
+                    <Button variant="outline" onClick={() => setOpen(false)}>Close</Button>
+                </SidebarFooter>
             </Sidebar>
             <SidebarInset>
                 <Navbar onLogout={handleLogout} username={username} />
@@ -77,6 +81,13 @@ export default function AtasanPage() {
                 </main>
             </SidebarInset>
         </div>
+    )
+}
+
+export default function AtasanPage() {
+  return (
+    <SidebarProvider defaultOpen={false}>
+        <AtasanPageContent />
     </SidebarProvider>
   )
 }
