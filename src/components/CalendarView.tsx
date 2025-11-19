@@ -251,7 +251,7 @@ const AddEventDialog = ({ selectedDate, onAddEvent }: { selectedDate: Date; onAd
 
 const SchedulePanel = ({ selectedDate, events, onAddEvent, onDeleteEvent, showAddButton, currentUser }: { selectedDate: Date; events: Event[]; onAddEvent: (event: Omit<Event, 'id' |'date' | 'createdBy'>) => void, onDeleteEvent: (eventId: string) => void, showAddButton: boolean, currentUser: string | null }) => {
   const dayEvents = events.filter(
-    (event) => new Date(event.date).toDateString() === selectedDate.toDateString()
+    (event) => event && new Date(event.date).toDateString() === selectedDate.toDateString()
   );
 
   return (
@@ -382,11 +382,17 @@ export default function CalendarView({ viewedUser }: { viewedUser?: string | nul
 
         // Scenario 2: Atasan viewing a subordinate
         if (userRole === 'atasan' && viewedUser && viewedUser !== currentUser) {
-            return events.filter(e => e.createdBy === viewedUser || e.visibility === 'public');
+            // Show public events and the viewed user's events
+            return events.filter(e => e.visibility === 'public' || e.createdBy === viewedUser);
         }
         
-        // Scenario 3: Any logged in user viewing their own schedule (or the general public view if no user is specified)
-        return events.filter(e => e.visibility === 'public' || e.createdBy === currentUser);
+        // Scenario 3: Any logged in user viewing their own schedule
+        if (currentUser) {
+            // Show public events and user's own events
+            return events.filter(e => e.visibility === 'public' || e.createdBy === currentUser);
+        }
+
+        return [];
 
     }, [events, currentUser, userRole, viewedUser, isClient]);
 
@@ -454,6 +460,3 @@ export default function CalendarView({ viewedUser }: { viewedUser?: string | nul
       </div>
     )
 }
-
-
-    
