@@ -2,22 +2,9 @@
 "use client";
 
 import * as React from "react";
-import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import CalendarView from "@/components/CalendarView";
-
-const Navbar = ({ onLogout, username }: { onLogout: () => void; username: string | null }) => {
-  return (
-    <header className="bg-primary text-primary-foreground p-4 shadow-md">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Welcome {username}</h1>
-        <div>
-          <Button onClick={onLogout}>Logout</Button>
-        </div>
-      </div>
-    </header>
-  );
-};
+import Navbar from "@/components/Navbar";
 
 export default function BawahanPage() {
   const router = useRouter();
@@ -48,7 +35,7 @@ export default function BawahanPage() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Navbar onLogout={handleLogout} username={username} />
+      <Navbar onLogout={handleLogout} username={username} userRole={userRole} />
       <main className="flex-1 flex">
         <CalendarView />
       </main>

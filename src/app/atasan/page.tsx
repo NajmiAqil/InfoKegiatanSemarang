@@ -2,28 +2,12 @@
 "use client";
 
 import * as React from "react";
-import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import CalendarView from "@/components/CalendarView";
-import { Sidebar, SidebarProvider, SidebarTrigger, SidebarInset, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, useSidebar } from "@/components/ui/sidebar";
+import { Sidebar, SidebarProvider, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Home } from "lucide-react";
-
-const Navbar = ({ onLogout, username }: { onLogout: () => void; username: string | null }) => {
-  return (
-    <header className="bg-primary text-primary-foreground px-4 py-2 shadow-md">
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-4">
-            <SidebarTrigger />
-            <h1 className="text-xl font-bold">Welcome {username}</h1>
-        </div>
-        <div>
-          <Button onClick={onLogout}>Logout</Button>
-        </div>
-      </div>
-    </header>
-  );
-};
+import Navbar from "@/components/Navbar";
 
 export default function AtasanPage() {
     const router = useRouter();
@@ -79,12 +63,12 @@ export default function AtasanPage() {
                     </SidebarMenu>
                 </SidebarContent>
             </Sidebar>
-            <SidebarInset>
-                <Navbar onLogout={handleLogout} username={username} />
+            <div className="flex-1">
+                <Navbar onLogout={handleLogout} username={username} userRole={userRole} showSidebarTrigger={true} />
                 <main className="flex-1 flex p-4">
                     <CalendarView viewedUser={selectedUser} />
                 </main>
-            </SidebarInset>
+            </div>
         </SidebarProvider>
     )
 }
