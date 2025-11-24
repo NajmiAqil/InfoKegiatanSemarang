@@ -98,10 +98,7 @@ const BawahanPage: React.FC = () => {
     return activity.pembuat === currentUser;
   };
 
-  const sampleToday: Activity[] = [
-    { no: 1, kegiatan: 'Rapat Koordinasi Pembangunan', tanggal: '23 Nov 2025', jam: '09:00', tempat: 'Aula Balaikota', jenis: 'today' },
-    { no: 2, kegiatan: 'Sosialisasi Program Digital', tanggal: '23 Nov 2025', jam: '13:30', tempat: 'Ruang Diskominfo', jenis: 'today' },
-  ];
+  const sampleToday: Activity[] = [];
 
   const sampleTomorrow: Activity[] = [
     { no: 1, kegiatan: 'Pengecekan Infrastruktur IT', tanggal: '11 Nov 2025', jam: '08:30', tempat: 'Dinas PU', jenis: 'tomorrow' },
