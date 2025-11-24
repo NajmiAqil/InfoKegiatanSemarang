@@ -358,9 +358,8 @@ const EditKegiatan: React.FC = () => {
                                     stroke="none"
                                     style={{ cursor: 'pointer' }}
                                     onClick={() => {
-                                      const h = hour === 12 ? 0 : hour;
                                       const min = formData.jam_mulai?.split(':')[1] || '00';
-                                      const newTime = `${h.toString().padStart(2, '0')}:${min}`;
+                                      const newTime = `${hour.toString().padStart(2, '0')}:${min}`;
                                       const newEndDate = calculateEndDate(formData.tanggal, newTime, formData.jam_berakhir);
                                       setFormData({ ...formData, jam_mulai: newTime, tanggal_berakhir: newEndDate });
                                       setTimePickerMode({ ...timePickerMode, mulai: 'minute' });
@@ -532,9 +531,8 @@ const EditKegiatan: React.FC = () => {
                                     stroke="none"
                                     style={{ cursor: 'pointer' }}
                                     onClick={() => {
-                                      const h = hour === 12 ? 0 : hour;
                                       const min = formData.jam_berakhir?.split(':')[1] || '00';
-                                      const newTime = `${h.toString().padStart(2, '0')}:${min}`;
+                                      const newTime = `${hour.toString().padStart(2, '0')}:${min}`;
                                       const newEndDate = calculateEndDate(formData.tanggal, formData.jam_mulai, newTime);
                                       setFormData({ ...formData, jam_berakhir: newTime, tanggal_berakhir: newEndDate });
                                       setTimePickerMode({ ...timePickerMode, berakhir: 'minute' });

@@ -356,36 +356,51 @@ const InfoDisplay = () => {
                           </tr>
                         </thead>
                         <tbody>
-                          {tomorrowActivities.length === 0 ? (
-                            <tr>
-                              <td colSpan={5} style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
-                                Tidak ada kegiatan besok
-                              </td>
-                            </tr>
-                          ) : (
-                            tomorrowActivities
-                              .map((activity: Activity) => ({
-                                ...activity,
-                                tanggal: formatDisplayDate(activity.tanggal)
-                              }))
-                              .map((activity: Activity) => (
-                                <tr 
-                                  key={`tomorrow-${activity.no}`} 
-                                  className="activity-row" 
-                                  style={{ background: '#fff', cursor: 'pointer' }}
-                                  onClick={() => {
-                                    sessionStorage.setItem('fromPath', '/');
-                                    navigate(`/kegiatan/${activity.no}`);
-                                  }}
-                                >
-                                  <td>{activity.no}</td>
-                                  <td><div className="activity-title">{activity.kegiatan}</div></td>
-                                  <td>{activity.tanggal}</td>
-                                  <td>{activity.jam}</td>
-                                  <td><div className="activity-place">{activity.tempat}</div></td>
-                                </tr>
-                              ))
-                          )}
+                          {(() => {
+                            // Filter kegiatan yang tanggalnya setelah hari ini
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+                            
+                            const filteredActivities = tomorrowActivities.filter((activity: Activity) => {
+                              // Parse tanggal dari format ISO (YYYY-MM-DD)
+                              const activityDate = new Date(activity.tanggal);
+                              activityDate.setHours(0, 0, 0, 0);
+                              
+                              // Hanya tampilkan kegiatan setelah hari ini
+                              return activityDate > today;
+                            });
+                            
+                            return filteredActivities.length === 0 ? (
+                              <tr>
+                                <td colSpan={5} style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+                                  Tidak ada kegiatan besok
+                                </td>
+                              </tr>
+                            ) : (
+                              filteredActivities
+                                .map((activity: Activity) => ({
+                                  ...activity,
+                                  tanggal: formatDisplayDate(activity.tanggal)
+                                }))
+                                .map((activity: Activity) => (
+                                  <tr 
+                                    key={`tomorrow-${activity.no}`} 
+                                    className="activity-row" 
+                                    style={{ background: '#fff', cursor: 'pointer' }}
+                                    onClick={() => {
+                                      sessionStorage.setItem('fromPath', '/');
+                                      navigate(`/kegiatan/${activity.no}`);
+                                    }}
+                                  >
+                                    <td>{activity.no}</td>
+                                    <td><div className="activity-title">{activity.kegiatan}</div></td>
+                                    <td>{activity.tanggal}</td>
+                                    <td>{activity.jam}</td>
+                                    <td><div className="activity-place">{activity.tempat}</div></td>
+                                  </tr>
+                                ))
+                            );
+                          })()}
                         </tbody>
                       </table>
                     </div>
