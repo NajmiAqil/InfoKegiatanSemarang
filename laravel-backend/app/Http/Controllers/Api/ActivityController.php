@@ -39,8 +39,8 @@ class ActivityController extends Controller
                   });
             });
         } else {
-            // Untuk homepage (InfoDisplay): tampilkan public + kantor (private tetap disembunyikan)
-            $query->whereIn('visibility', ['public', 'kantor']);
+            // Untuk homepage (InfoDisplay): hanya tampilkan public
+            $query->where('visibility', 'public');
         }
         
         $allActivities = $query->get();
