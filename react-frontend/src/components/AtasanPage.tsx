@@ -43,10 +43,10 @@ const AtasanPage: React.FC = () => {
       sessionStorage.removeItem('selectedBawahan');
     }
 
-    // Get username from localStorage or sessionStorage
-    const storedUser = localStorage.getItem('username') || sessionStorage.getItem('username');
-    if (storedUser) {
-      setUsername(storedUser);
+    // Get name for display from localStorage or sessionStorage
+    const storedName = localStorage.getItem('name') || sessionStorage.getItem('name') || localStorage.getItem('username') || sessionStorage.getItem('username');
+    if (storedName) {
+      setUsername(storedName);
     }
 
     const timerID = setInterval(() => {
@@ -510,7 +510,7 @@ const AtasanPage: React.FC = () => {
                               );
                             }
                             
-                            return filteredActivities.map((activity: Activity) => {
+                            return filteredActivities.map((activity: Activity, index: number) => {
                               const displayDate = activity.tanggal.includes('-') ? formatDisplayDate(activity.tanggal) : activity.tanggal;
                               return (
                                 <tr 
@@ -524,7 +524,7 @@ const AtasanPage: React.FC = () => {
                                     window.location.href = `/kegiatan/${activity.id || activity.no}`;
                                   }}
                                 >
-                                  <td>{activity.no}</td>
+                                  <td>{index + 1}</td>
                                   <td><div className="activity-title">{activity.kegiatan}</div></td>
                                   <td>{displayDate}</td>
                                   <td>{activity.jam}</td>
@@ -640,7 +640,7 @@ const AtasanPage: React.FC = () => {
                               );
                             }
                             
-                            return filteredActivities.map((activity: Activity) => {
+                            return filteredActivities.map((activity: Activity, index: number) => {
                               const displayDate = activity.tanggal.includes('-') ? formatDisplayDate(activity.tanggal) : activity.tanggal;
                               return (
                                 <tr 
@@ -654,7 +654,7 @@ const AtasanPage: React.FC = () => {
                                     window.location.href = `/kegiatan/${activity.id || activity.no}`;
                                   }}
                                 >
-                                  <td>{activity.no}</td>
+                                  <td>{index + 1}</td>
                                   <td><div className="activity-title">{activity.kegiatan}</div></td>
                                   <td>{displayDate}</td>
                                   <td>{activity.jam}</td>

@@ -57,14 +57,14 @@ const EditKegiatan: React.FC = () => {
   const fetchActivityData = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/activities/${id}`);
+      const currentUser = localStorage.getItem('username') || sessionStorage.getItem('username') || '';
+      const response = await fetch(`/api/activities/${id}?username=${encodeURIComponent(currentUser)}`);
       if (!response.ok) {
         throw new Error('Gagal memuat data kegiatan');
       }
       const data = await response.json();
-      
+
       // Check if user is the creator
-      const currentUser = localStorage.getItem('username') || sessionStorage.getItem('username');
       if (data.pembuat !== currentUser) {
         alert('Anda tidak memiliki akses untuk mengedit kegiatan ini');
         window.location.href = '/';
@@ -81,34 +81,34 @@ const EditKegiatan: React.FC = () => {
           parsedOrangTerkait = [];
         }
       }
+      
       setSelectedUsers(parsedOrangTerkait);
-
+      
       setFormData({
-        judul: data.judul || data.kegiatan || '',
+        judul: data.judul || '',
         tanggal: data.tanggal || '',
         tanggal_berakhir: data.tanggal_berakhir || data.tanggal || '',
         jenis_kegiatan: data.jenis_kegiatan || '',
-        jam_mulai: data.jam_mulai || data.jam || '00:00',
+        jam_mulai: data.jam_mulai || '00:00',
         jam_berakhir: data.jam_berakhir || '00:00',
-        lokasi: data.lokasi || data.tempat || '',
+        lokasi: data.lokasi || '',
         visibility: data.visibility || 'public',
         deskripsi: data.deskripsi || '',
         orang_terkait: data.orang_terkait || '',
-        pembuat: data.pembuat || '',
+        pembuat: data.pembuat || currentUser,
         repeat: data.repeat || 'no',
         repeat_frequency: data.repeat_frequency || 'daily',
         repeat_limit: data.repeat_end_date ? 'yes' : 'no',
         repeat_end_date: data.repeat_end_date || '',
       });
-
-      if (data.media) {
-        setExistingMedia(Array.isArray(data.media) ? data.media : [data.media]);
+      
+      if (data.media && Array.isArray(data.media)) {
+        setExistingMedia(data.media);
       }
-
+      
       setIsLoading(false);
-    } catch (err: any) {
-      console.error('Error fetching activity:', err);
-      setError(err.message || 'Gagal memuat data kegiatan');
+    } catch (error: any) {
+      setError(error.message || 'Gagal memuat data kegiatan');
       setIsLoading(false);
     }
   };

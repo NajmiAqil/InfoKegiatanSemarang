@@ -23,10 +23,12 @@ const LoginPage: React.FC = () => {
       })
       .then((data) => {
         const role = data.user?.role || 'bawahan';
-        const userName = data.user?.name || 'User';
+        const username = data.user?.username || 'User';
+        const name = data.user?.name || 'User';
         
-        // Store username for use in dashboard
-        localStorage.setItem('username', userName);
+        // Store username (not name!) for use in dashboard
+        localStorage.setItem('username', username);
+        localStorage.setItem('name', name);
         
         if (role === 'atasan') {
           window.location.href = '/atasan';

@@ -14,10 +14,10 @@ const BawahanPage: React.FC = () => {
   const [username, setUsername] = useState('Bawahan');
 
   useEffect(() => {
-    // Get username from localStorage or sessionStorage
-    const storedUser = localStorage.getItem('username') || sessionStorage.getItem('username');
-    if (storedUser) {
-      setUsername(storedUser);
+    // Get name for display from localStorage or sessionStorage
+    const storedName = localStorage.getItem('name') || sessionStorage.getItem('name') || localStorage.getItem('username') || sessionStorage.getItem('username');
+    if (storedName) {
+      setUsername(storedName);
     }
 
     const timerID = setInterval(() => {
@@ -38,11 +38,16 @@ const BawahanPage: React.FC = () => {
       setIsLoading(true);
       setError(null);
       const storedUser = localStorage.getItem('username') || sessionStorage.getItem('username') || 'Bawahan';
+      console.log('BawahanPage - Fetching activities for username:', storedUser);
       const response = await fetch(`/api/activities?username=${encodeURIComponent(storedUser)}`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
+      console.log('BawahanPage - Received activities:', data);
+      console.log('BawahanPage - Today count:', data.today?.length || 0);
+      console.log('BawahanPage - Tomorrow count:', data.tomorrow?.length || 0);
+      console.log('BawahanPage - Tomorrow activities:', data.tomorrow);
       setTodayActivities(data.today || []);
       setTomorrowActivities(data.tomorrow || []);
     } catch (error) {
@@ -303,7 +308,7 @@ const BawahanPage: React.FC = () => {
                               );
                             }
                             
-                            return filteredActivities.map((activity: Activity) => {
+                            return filteredActivities.map((activity: Activity, index: number) => {
                               const displayDate = activity.tanggal.includes('-') ? formatDisplayDate(activity.tanggal) : activity.tanggal;
                               return (
                                 <tr 
@@ -317,7 +322,7 @@ const BawahanPage: React.FC = () => {
                                     window.location.href = `/kegiatan/${activity.id || activity.no}`;
                                   }}
                                 >
-                                  <td>{activity.no}</td>
+                                  <td>{index + 1}</td>
                                   <td><div className="activity-title">{activity.kegiatan}</div></td>
                                   <td>{displayDate}</td>
                                   <td>{activity.jam}</td>
@@ -433,7 +438,7 @@ const BawahanPage: React.FC = () => {
                               );
                             }
                             
-                            return filteredActivities.map((activity: Activity) => {
+                            return filteredActivities.map((activity: Activity, index: number) => {
                               const displayDate = activity.tanggal.includes('-') ? formatDisplayDate(activity.tanggal) : activity.tanggal;
                               return (
                                 <tr 
@@ -447,7 +452,7 @@ const BawahanPage: React.FC = () => {
                                     window.location.href = `/kegiatan/${activity.id || activity.no}`;
                                   }}
                                 >
-                                  <td>{activity.no}</td>
+                                  <td>{index + 1}</td>
                                   <td><div className="activity-title">{activity.kegiatan}</div></td>
                                   <td>{displayDate}</td>
                                   <td>{activity.jam}</td>

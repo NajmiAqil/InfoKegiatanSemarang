@@ -57,12 +57,15 @@ const CalendarMonth: React.FC<Props> = ({ activities, fromPath = '/' }) => {
 
   const eventsByDate = useMemo(() => {
     const map = new Map<string, Activity[]>();
+    console.log('CalendarMonth - Processing activities:', activities.length);
     activities.forEach(a => {
       const parsed = new Date(a.tanggal);
       const key = parsed.toDateString();
+      console.log('CalendarMonth - Activity:', a.id, a.tanggal, '→', key);
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(a);
     });
+    console.log('CalendarMonth - Events by date:', map);
     return map;
   }, [activities]);
 

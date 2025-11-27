@@ -13,6 +13,12 @@ class ActivityController extends Controller
         $username = $request->query('username');
         $pembuat = $request->query('pembuat'); // Filter untuk melihat kegiatan bawahan tertentu
         
+        // Log untuk debugging
+        \Log::info('ActivityController@index called', [
+            'username' => $username,
+            'pembuat' => $pembuat,
+        ]);
+        
         // Get today's date
         $today = date('Y-m-d');
         
@@ -33,8 +39,9 @@ class ActivityController extends Controller
                       $q2->where('visibility', 'private')
                          ->where(function($q3) use ($username) {
                              // Private milik sendiri atau user ada di orang_terkait (SQLite compatible)
+                             // Check both exact username match and case-insensitive JSON array match
                              $q3->where('pembuat', $username)
-                                ->orWhereRaw('LOWER(orang_terkait) LIKE ?', ['%"' . strtolower($username) . '"%']);
+                                ->orWhereRaw('LOWER(orang_terkait) LIKE ?', ['%' . strtolower($username) . '%']);
                          });
                   });
             });
