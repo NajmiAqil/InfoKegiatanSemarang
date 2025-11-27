@@ -73,11 +73,15 @@ const BawahanPage: React.FC = () => {
     }
 
     try {
-      const response = await fetch(`/api/activities/${activityId}`, {
+      const currentUser = localStorage.getItem('username') || sessionStorage.getItem('username') || '';
+      const response = await fetch(`/api/activities/${activityId}?username=${encodeURIComponent(currentUser)}`, {
         method: 'DELETE',
       });
 
       if (!response.ok) {
+        if (response.status === 403) {
+          throw new Error('Anda tidak berhak menghapus kegiatan ini');
+        }
         throw new Error('Gagal menghapus kegiatan');
       }
 
@@ -264,6 +268,7 @@ const BawahanPage: React.FC = () => {
                             <th>KEGIATAN</th>
                             <th>TANGGAL</th>
                             <th>JAM</th>
+                            <th>PEMBUAT</th>
                             <th>TEMPAT</th>
                             <th>AKSI</th>
                           </tr>
@@ -272,8 +277,20 @@ const BawahanPage: React.FC = () => {
                           {(() => {
                             const filteredActivities = (todayActivities.length === 0 ? sampleToday : todayActivities)
                               .filter((activity: Activity) => {
-                                const displayDate = activity.tanggal.includes('-') ? formatDisplayDate(activity.tanggal) : activity.tanggal;
-                                return displayDate === getTodayString();
+                                // Compare by actual date rather than string to avoid locale mismatches
+                                let activityDate: Date;
+                                if (activity.tanggal.includes('-')) {
+                                  activityDate = new Date(activity.tanggal);
+                                } else {
+                                  const [day, monthStr, year] = activity.tanggal.split(' ');
+                                  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+                                  const month = monthNames.indexOf(monthStr);
+                                  activityDate = new Date(Number(year), month, Number(day));
+                                }
+                                activityDate.setHours(0,0,0,0);
+                                const today = new Date();
+                                today.setHours(0,0,0,0);
+                                return activityDate.getTime() === today.getTime();
                               });
                             
                             if (filteredActivities.length === 0) {
@@ -289,17 +306,28 @@ const BawahanPage: React.FC = () => {
                             return filteredActivities.map((activity: Activity) => {
                               const displayDate = activity.tanggal.includes('-') ? formatDisplayDate(activity.tanggal) : activity.tanggal;
                               return (
-                                <tr key={`today-${activity.no}`} className="activity-row" style={{ background: '#fff' }}>
+                                <tr 
+                                  key={`today-${activity.no}`} 
+                                  className="activity-row" 
+                                  style={{ background: '#fff', cursor: 'pointer' }}
+                                  onClick={() => {
+                                    sessionStorage.setItem('fromPath', '/bawahan');
+                                    const perspective = localStorage.getItem('username') || sessionStorage.getItem('username') || '';
+                                    sessionStorage.setItem('detailUsername', perspective);
+                                    window.location.href = `/kegiatan/${activity.id || activity.no}`;
+                                  }}
+                                >
                                   <td>{activity.no}</td>
                                   <td><div className="activity-title">{activity.kegiatan}</div></td>
                                   <td>{displayDate}</td>
                                   <td>{activity.jam}</td>
+                                  <td>{activity.pembuat || '-'}</td>
                                   <td><div className="activity-place">{activity.tempat}</div></td>
-                                  <td>
+                                  <td onClick={(e) => e.stopPropagation()}>
                                     {canModify(activity) && (
                                       <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
                                         <button
-                                          onClick={() => handleEdit(activity.no)}
+                                          onClick={() => handleEdit(activity.id || activity.no)}
                                           style={{
                                             padding: '6px 12px',
                                             background: '#FFB300',
@@ -318,7 +346,7 @@ const BawahanPage: React.FC = () => {
                                           ✏️ Edit
                                         </button>
                                         <button
-                                          onClick={() => handleDelete(activity.no)}
+                                          onClick={() => handleDelete(activity.id || activity.no)}
                                           style={{
                                             padding: '6px 12px',
                                             background: '#d32f2f',
@@ -360,6 +388,7 @@ const BawahanPage: React.FC = () => {
                             <th>KEGIATAN</th>
                             <th>TANGGAL</th>
                             <th>JAM</th>
+                            <th>PEMBUAT</th>
                             <th>TEMPAT</th>
                             <th>AKSI</th>
                           </tr>
@@ -390,7 +419,8 @@ const BawahanPage: React.FC = () => {
                                 const today = new Date();
                                 today.setHours(0, 0, 0, 0);
                                 
-                                return activityDate >= tomorrow;
+                                // Show activities from tomorrow onwards (including tomorrow)
+                                return activityDate > today;
                               });
                             
                             if (filteredActivities.length === 0) {
@@ -406,17 +436,28 @@ const BawahanPage: React.FC = () => {
                             return filteredActivities.map((activity: Activity) => {
                               const displayDate = activity.tanggal.includes('-') ? formatDisplayDate(activity.tanggal) : activity.tanggal;
                               return (
-                                <tr key={`tomorrow-${activity.no}`} className="activity-row" style={{ background: '#fff' }}>
+                                <tr 
+                                  key={`tomorrow-${activity.no}`} 
+                                  className="activity-row" 
+                                  style={{ background: '#fff', cursor: 'pointer' }}
+                                  onClick={() => {
+                                    sessionStorage.setItem('fromPath', '/bawahan');
+                                    const perspective = localStorage.getItem('username') || sessionStorage.getItem('username') || '';
+                                    sessionStorage.setItem('detailUsername', perspective);
+                                    window.location.href = `/kegiatan/${activity.id || activity.no}`;
+                                  }}
+                                >
                                   <td>{activity.no}</td>
                                   <td><div className="activity-title">{activity.kegiatan}</div></td>
                                   <td>{displayDate}</td>
                                   <td>{activity.jam}</td>
+                                  <td>{activity.pembuat || '-'}</td>
                                   <td><div className="activity-place">{activity.tempat}</div></td>
-                                  <td>
+                                  <td onClick={(e) => e.stopPropagation()}>
                                     {canModify(activity) && (
                                       <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
                                         <button
-                                          onClick={() => handleEdit(activity.no)}
+                                          onClick={() => handleEdit(activity.id || activity.no)}
                                           style={{
                                             padding: '6px 12px',
                                             background: '#FFB300',
@@ -435,7 +476,7 @@ const BawahanPage: React.FC = () => {
                                           ✏️ Edit
                                         </button>
                                         <button
-                                          onClick={() => handleDelete(activity.no)}
+                                          onClick={() => handleDelete(activity.id || activity.no)}
                                           style={{
                                             padding: '6px 12px',
                                             background: '#d32f2f',

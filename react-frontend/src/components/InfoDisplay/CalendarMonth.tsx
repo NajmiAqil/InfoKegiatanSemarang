@@ -103,6 +103,10 @@ const CalendarMonth: React.FC<Props> = ({ activities, fromPath = '/' }) => {
 
   const canModify = (activity: Activity) => {
     const currentUser = localStorage.getItem('username') || sessionStorage.getItem('username');
+    // Don't show edit/delete buttons if not logged in or not on dashboard
+    if (!currentUser || fromPath === '/') {
+      return false;
+    }
     return activity.pembuat === currentUser;
   };
 
@@ -183,6 +187,11 @@ const CalendarMonth: React.FC<Props> = ({ activities, fromPath = '/' }) => {
                     className="event-card"
                     onClick={() => {
                       sessionStorage.setItem('fromPath', fromPath);
+                      // Use selected bawahan when atasan perspective, else current user
+                      const perspective = (fromPath === '/atasan')
+                        ? (sessionStorage.getItem('selectedBawahan') || localStorage.getItem('username') || sessionStorage.getItem('username') || '')
+                        : (localStorage.getItem('username') || sessionStorage.getItem('username') || '');
+                      sessionStorage.setItem('detailUsername', perspective);
                       navigate(`/kegiatan/${ev.id || ev.no}`);
                     }}
                     style={{ cursor: 'pointer', position: 'relative' }}

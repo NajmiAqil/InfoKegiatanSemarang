@@ -65,8 +65,9 @@ const InfoDisplay = () => {
       }
       const data = await response.json();
       
-      // Gabungkan semua activities
-      const allActivities = [...(data.today || []), ...(data.tomorrow || [])];
+      // Gabungkan semua activities dan pastikan hanya public
+      const allActivities = [...(data.today || []), ...(data.tomorrow || [])]
+        .filter((activity: Activity) => activity.visibility === 'public');
       
       // Filter untuk 3 hari ke depan dari hari ini
       const today = new Date();
@@ -102,10 +103,11 @@ const InfoDisplay = () => {
           }
           
           return {
-            id: activity.no,
+            // Pakai primary key id untuk navigasi detail agar tidak salah record
+            id: activity.id ?? activity.no,
             kategori: activity.jenis || 'Kegiatan',
             judul: activity.kegiatan,
-            tanggal: formatDisplayDate(activity.tanggal) + ' • ' + activity.jam,
+            tanggal: formatDisplayDate(activity.tanggal) + ' • ' + (activity.jam_mulai || activity.jam),
             deskripsi: shortDesc || activity.tempat,
             media: activity.media,
           };
@@ -304,36 +306,68 @@ const InfoDisplay = () => {
                           </tr>
                         </thead>
                         <tbody>
-                          {todayActivities.length === 0 ? (
-                            <tr>
-                              <td colSpan={5} style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
-                                Tidak ada kegiatan hari ini
-                              </td>
-                            </tr>
-                          ) : (
-                            todayActivities
-                              .map((activity: Activity) => ({
-                                ...activity,
-                                tanggal: formatDisplayDate(activity.tanggal)
-                              }))
-                              .map((activity: Activity) => (
-                                <tr 
-                                  key={`today-${activity.no}`} 
-                                  className="activity-row" 
-                                  style={{ background: '#fff', cursor: 'pointer' }}
-                                  onClick={() => {
-                                    sessionStorage.setItem('fromPath', '/');
-                                    navigate(`/kegiatan/${activity.no}`);
-                                  }}
-                                >
-                                  <td>{activity.no}</td>
-                                  <td><div className="activity-title">{activity.kegiatan}</div></td>
-                                  <td>{activity.tanggal}</td>
-                                  <td>{activity.jam}</td>
-                                  <td><div className="activity-place">{activity.tempat}</div></td>
+                          {(() => {
+                            // Gunakan tanggal lokal (sesuai header datetime) untuk menentukan kegiatan hari ini
+                            const clientToday = new Date();
+                            clientToday.setHours(0,0,0,0);
+
+                            // Gabungkan semua activities dari response agar tidak terpengaruh timezone backend
+                            const combined = [...todayActivities, ...tomorrowActivities];
+
+                            // Hilangkan duplikat berdasarkan id/no
+                            const uniqueMap = new Map<string|number, Activity>();
+                            combined.forEach(a => uniqueMap.set(a.id ?? a.no, a));
+                            const unique = Array.from(uniqueMap.values());
+
+                            const inToday = unique.filter(a => {
+                              if (!a.tanggal) return false;
+                              const start = new Date(a.tanggal);
+                              const end = new Date(a.tanggal_berakhir || a.tanggal);
+                              start.setHours(0,0,0,0); end.setHours(0,0,0,0);
+                              return start <= clientToday && clientToday <= end; // berada dalam rentang multi-day
+                            });
+
+                            if (inToday.length === 0) {
+                              return (
+                                <tr>
+                                  <td colSpan={5} style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+                                    Tidak ada kegiatan hari ini
+                                  </td>
                                 </tr>
-                              ))
-                          )}
+                              );
+                            }
+
+                            return inToday
+                              .sort((a,b) => {
+                                const jamA = (a.jam_mulai || a.jam || '00:00');
+                                const jamB = (b.jam_mulai || b.jam || '00:00');
+                                return jamA.localeCompare(jamB);
+                              })
+                              .map((activity: Activity) => {
+                                const startDisplay = formatDisplayDate(activity.tanggal);
+                                const endDisplay = activity.tanggal_berakhir ? formatDisplayDate(activity.tanggal_berakhir) : startDisplay;
+                                const jamTampil = activity.jam_mulai && activity.jam_berakhir
+                                  ? `${activity.jam_mulai} - ${activity.jam_berakhir}`
+                                  : (activity.jam_mulai || activity.jam);
+                                return (
+                                  <tr
+                                    key={`today-${activity.id ?? activity.no}`}
+                                    className="activity-row"
+                                    style={{ background: '#fff', cursor: 'pointer' }}
+                                    onClick={() => {
+                                      sessionStorage.setItem('fromPath', '/');
+                                      navigate(`/kegiatan/${activity.id}`);
+                                    }}
+                                  >
+                                    <td>{activity.no}</td>
+                                    <td><div className="activity-title">{activity.kegiatan}</div></td>
+                                    <td>{startDisplay === endDisplay ? startDisplay : `${startDisplay} - ${endDisplay}`}</td>
+                                    <td>{jamTampil}</td>
+                                    <td><div className="activity-place">{activity.tempat}</div></td>
+                                  </tr>
+                                );
+                              });
+                          })()}
                         </tbody>
                       </table>
                     </div>
@@ -389,7 +423,7 @@ const InfoDisplay = () => {
                                     style={{ background: '#fff', cursor: 'pointer' }}
                                     onClick={() => {
                                       sessionStorage.setItem('fromPath', '/');
-                                      navigate(`/kegiatan/${activity.no}`);
+                                      navigate(`/kegiatan/${activity.id}`);
                                     }}
                                   >
                                     <td>{activity.no}</td>

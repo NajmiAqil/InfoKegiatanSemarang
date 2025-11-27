@@ -21,6 +21,7 @@ class UserController extends Controller
             'username' => 'required|string|max:255|unique:users',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:6',
+            'nomor_hp' => 'nullable|string|max:20',
         ]);
 
         if ($validator->fails()) {
@@ -35,6 +36,7 @@ class UserController extends Controller
             'username' => $request->username,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'nomor_hp' => $request->nomor_hp,
             'role' => 'bawahan',
             'status' => 'pending',
         ]);
@@ -46,6 +48,7 @@ class UserController extends Controller
                 'name' => $user->name,
                 'username' => $user->username,
                 'email' => $user->email,
+                'nomor_hp' => $user->nomor_hp,
                 'status' => $user->status,
             ]
         ], 201);
@@ -70,6 +73,18 @@ class UserController extends Controller
     {
         $approvedUsers = User::where('status', 'approved')
             ->where('role', 'bawahan')
+            ->orderBy('name', 'asc')
+            ->get(['id', 'name', 'username']);
+
+        return response()->json($approvedUsers);
+    }
+
+    /**
+     * Get all approved users (for orang_terkait selection)
+     */
+    public function getAllApprovedUsers()
+    {
+        $approvedUsers = User::where('status', 'approved')
             ->orderBy('name', 'asc')
             ->get(['id', 'name', 'username']);
 

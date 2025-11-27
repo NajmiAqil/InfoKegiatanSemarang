@@ -4,6 +4,12 @@ import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import './AddKegiatan.css';
 
+interface User {
+  id: number;
+  name: string;
+  username: string;
+}
+
 const EditKegiatan: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [formData, setFormData] = useState({
@@ -30,10 +36,23 @@ const EditKegiatan: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [users, setUsers] = useState<User[]>([]);
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
 
   useEffect(() => {
     fetchActivityData();
+    fetchUsers();
   }, [id]);
+
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch('/api/users/approved');
+      const data = await response.json();
+      setUsers(data);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  };
 
   const fetchActivityData = async () => {
     try {
@@ -51,6 +70,18 @@ const EditKegiatan: React.FC = () => {
         window.location.href = '/';
         return;
       }
+
+      // Parse orang_terkait if it's a JSON array
+      let parsedOrangTerkait = [];
+      if (data.orang_terkait) {
+        try {
+          parsedOrangTerkait = JSON.parse(data.orang_terkait);
+        } catch (e) {
+          // If not JSON, treat as empty
+          parsedOrangTerkait = [];
+        }
+      }
+      setSelectedUsers(parsedOrangTerkait);
 
       setFormData({
         judul: data.judul || data.kegiatan || '',
@@ -135,6 +166,9 @@ const EditKegiatan: React.FC = () => {
     Object.entries(formData).forEach(([key, value]) => {
       if (key === 'pembuat') {
         formDataToSend.append(key, pembuatValue);
+      } else if (key === 'orang_terkait') {
+        // Send selectedUsers as JSON array instead of text field
+        formDataToSend.append(key, JSON.stringify(selectedUsers));
       } else {
         formDataToSend.append(key, value);
       }
@@ -831,13 +865,78 @@ const EditKegiatan: React.FC = () => {
 
           <div className="form-group">
             <label>Orang yang Berhubungan</label>
-            <input
-              type="text"
-              name="orang_terkait"
-              value={formData.orang_terkait}
-              onChange={handleChange}
-              placeholder="Nama orang terkait (opsional)"
-            />
+            <div style={{ position: 'relative' }}>
+              <select
+                value=""
+                onChange={(e) => {
+                  const username = e.target.value;
+                  if (username && !selectedUsers.includes(username)) {
+                    setSelectedUsers([...selectedUsers, username]);
+                  }
+                }}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  borderRadius: '8px',
+                  border: '1px solid #ddd',
+                  fontSize: '1rem',
+                  backgroundColor: '#fff'
+                }}
+              >
+                <option value="">Pilih pengguna...</option>
+                {users
+                  .filter(user => !selectedUsers.includes(user.username))
+                  .map(user => (
+                    <option key={user.id} value={user.username}>
+                      {user.name} (@{user.username})
+                    </option>
+                  ))
+                }
+              </select>
+              {selectedUsers.length > 0 && (
+                <div style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '8px',
+                  marginTop: '12px'
+                }}>
+                  {selectedUsers.map(username => {
+                    const user = users.find(u => u.username === username);
+                    return (
+                      <div
+                        key={username}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '6px 12px',
+                          backgroundColor: '#e3f2fd',
+                          borderRadius: '16px',
+                          fontSize: '0.9rem'
+                        }}
+                      >
+                        <span>{user ? user.name : username}</span>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedUsers(selectedUsers.filter(u => u !== username))}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#1976d2',
+                            cursor: 'pointer',
+                            fontSize: '1.1rem',
+                            padding: '0',
+                            lineHeight: '1'
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
 
           {error && <div className="error-box">{error}</div>}

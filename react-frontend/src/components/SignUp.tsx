@@ -9,7 +9,8 @@ const SignUp: React.FC = () => {
     username: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    nomor_hp: ''
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -60,6 +61,7 @@ const SignUp: React.FC = () => {
           username: formData.username,
           email: formData.email,
           password: formData.password,
+          nomor_hp: formData.nomor_hp,
         }),
       });
 
@@ -134,6 +136,20 @@ const SignUp: React.FC = () => {
               onChange={handleChange}
               placeholder="contoh@email.com"
               required
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="nomor_hp">Nomor Handphone</label>
+            <input
+              type="tel"
+              id="nomor_hp"
+              name="nomor_hp"
+              value={formData.nomor_hp}
+              onChange={handleChange}
+              placeholder="Contoh: 081234567890"
+              pattern="[0-9]+"
+              inputMode="numeric"
             />
           </div>
 

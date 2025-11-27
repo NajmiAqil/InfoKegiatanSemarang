@@ -22,6 +22,8 @@ const AtasanPage: React.FC = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [todayActivities, setTodayActivities] = useState<Activity[]>([]);
   const [tomorrowActivities, setTomorrowActivities] = useState<Activity[]>([]);
+  const [allTodayActivities, setAllTodayActivities] = useState<Activity[]>([]); // For calendar
+  const [allTomorrowActivities, setAllTomorrowActivities] = useState<Activity[]>([]); // For calendar
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'today' | 'tomorrow'>('today');
@@ -34,6 +36,13 @@ const AtasanPage: React.FC = () => {
   const [loadingUsers, setLoadingUsers] = useState(false);
 
   useEffect(() => {
+    // Persist selected bawahan for detail views
+    if (selectedBawahan) {
+      sessionStorage.setItem('selectedBawahan', selectedBawahan);
+    } else {
+      sessionStorage.removeItem('selectedBawahan');
+    }
+
     // Get username from localStorage or sessionStorage
     const storedUser = localStorage.getItem('username') || sessionStorage.getItem('username');
     if (storedUser) {
@@ -88,20 +97,30 @@ const AtasanPage: React.FC = () => {
       setError(null);
       const storedUser = localStorage.getItem('username') || sessionStorage.getItem('username') || 'Atasan';
       
-      let url = `/api/activities?username=${encodeURIComponent(storedUser)}`;
-      
-      // Jika ada bawahan dipilih, fetch semua activities bawahan tersebut (termasuk private)
+      // Jika ada bawahan dipilih, fetch sebagai perspektif bawahan tersebut
       if (selectedBawahan) {
-        url = `/api/activities?username=${encodeURIComponent(storedUser)}&pembuat=${encodeURIComponent(selectedBawahan)}`;
+        const bawahanUrl = `/api/activities?username=${encodeURIComponent(selectedBawahan)}`;
+        const bawahanResponse = await fetch(bawahanUrl);
+        if (bawahanResponse.ok) {
+          const bawahanData = await bawahanResponse.json();
+          // Set semua data (kalender dan tabel) dari perspektif bawahan
+          setAllTodayActivities(bawahanData.today || []);
+          setAllTomorrowActivities(bawahanData.tomorrow || []);
+          setTodayActivities(bawahanData.today || []);
+          setTomorrowActivities(bawahanData.tomorrow || []);
+        }
+      } else {
+        // Jika tidak ada bawahan dipilih, fetch sebagai atasan
+        const atasanUrl = `/api/activities?username=${encodeURIComponent(storedUser)}`;
+        const atasanResponse = await fetch(atasanUrl);
+        if (atasanResponse.ok) {
+          const atasanData = await atasanResponse.json();
+          setAllTodayActivities(atasanData.today || []);
+          setAllTomorrowActivities(atasanData.tomorrow || []);
+          setTodayActivities(atasanData.today || []);
+          setTomorrowActivities(atasanData.tomorrow || []);
+        }
       }
-      
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
-      setTodayActivities(data.today || []);
-      setTomorrowActivities(data.tomorrow || []);
     } catch (error) {
       console.error('Error fetching activities:', error);
       if (error instanceof Error) {
@@ -111,6 +130,8 @@ const AtasanPage: React.FC = () => {
           setError(null);
           setTodayActivities([]);
           setTomorrowActivities([]);
+          setAllTodayActivities([]);
+          setAllTomorrowActivities([]);
         } else if (error.message.includes('HTTP error! status: 500')) {
           setError('Terjadi kesalahan pada server. Silakan coba lagi nanti.');
         } else {
@@ -130,11 +151,15 @@ const AtasanPage: React.FC = () => {
     }
 
     try {
-      const response = await fetch(`/api/activities/${activityId}`, {
+      const currentUser = localStorage.getItem('username') || sessionStorage.getItem('username') || '';
+      const response = await fetch(`/api/activities/${activityId}?username=${encodeURIComponent(currentUser)}`, {
         method: 'DELETE',
       });
 
       if (!response.ok) {
+        if (response.status === 403) {
+          throw new Error('Anda tidak berhak menghapus kegiatan ini');
+        }
         throw new Error('Gagal menghapus kegiatan');
       }
 
@@ -260,7 +285,7 @@ const AtasanPage: React.FC = () => {
         onClose={() => setIsSidebarOpen(false)}
         onSelectBawahan={setSelectedBawahan}
         selectedBawahan={selectedBawahan}
-        bawahanList={approvedBawahan.map(b => b.username || b.name)}
+        bawahanList={approvedBawahan}
       />
       
       <header className="header">
@@ -317,6 +342,48 @@ const AtasanPage: React.FC = () => {
       <main className="content">
         <section className="agenda-section">
           <h2>Selamat Datang, {username}</h2>
+          
+          {/* Indikator perspektif bawahan */}
+          {selectedBawahan && (
+            <div style={{
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              color: 'white',
+              padding: '12px 20px',
+              borderRadius: '8px',
+              marginBottom: '20px',
+              textAlign: 'center',
+              boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
+              fontSize: '1rem',
+              fontWeight: '600'
+            }}>
+              👁️ Melihat perspektif: <strong>{approvedBawahan.find(b => b.username === selectedBawahan)?.name || selectedBawahan}</strong> (@{selectedBawahan})
+              <button
+                onClick={() => setSelectedBawahan(null)}
+                style={{
+                  marginLeft: '15px',
+                  padding: '6px 14px',
+                  background: 'rgba(255, 255, 255, 0.25)',
+                  color: 'white',
+                  border: '1px solid rgba(255, 255, 255, 0.4)',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '0.9rem',
+                  fontWeight: '600',
+                  transition: 'all 0.2s'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.35)';
+                  e.currentTarget.style.transform = 'scale(1.05)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25)';
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
+              >
+                ✕ Kembali ke {username} View
+              </button>
+            </div>
+          )}
           
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
             <button
@@ -408,6 +475,7 @@ const AtasanPage: React.FC = () => {
                             <th>KEGIATAN</th>
                             <th>TANGGAL</th>
                             <th>JAM</th>
+                            <th>PEMBUAT</th>
                             <th>TEMPAT</th>
                             <th>AKSI</th>
                           </tr>
@@ -416,8 +484,20 @@ const AtasanPage: React.FC = () => {
                           {(() => {
                             const filteredActivities = (todayActivities.length === 0 ? sampleToday : todayActivities)
                               .filter((activity: Activity) => {
-                                const displayDate = activity.tanggal.includes('-') ? formatDisplayDate(activity.tanggal) : activity.tanggal;
-                                return displayDate === getTodayString();
+                                // Compare by actual date rather than string to avoid locale mismatches
+                                let activityDate: Date;
+                                if (activity.tanggal.includes('-')) {
+                                  activityDate = new Date(activity.tanggal);
+                                } else {
+                                  const [day, monthStr, year] = activity.tanggal.split(' ');
+                                  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+                                  const month = monthNames.indexOf(monthStr);
+                                  activityDate = new Date(Number(year), month, Number(day));
+                                }
+                                activityDate.setHours(0,0,0,0);
+                                const today = new Date();
+                                today.setHours(0,0,0,0);
+                                return activityDate.getTime() === today.getTime();
                               });
                             
                             if (filteredActivities.length === 0) {
@@ -433,17 +513,28 @@ const AtasanPage: React.FC = () => {
                             return filteredActivities.map((activity: Activity) => {
                               const displayDate = activity.tanggal.includes('-') ? formatDisplayDate(activity.tanggal) : activity.tanggal;
                               return (
-                                <tr key={`today-${activity.no}`} className="activity-row" style={{ background: '#fff' }}>
+                                <tr 
+                                  key={`today-${activity.no}`} 
+                                  className="activity-row" 
+                                  style={{ background: '#fff', cursor: 'pointer' }}
+                                  onClick={() => {
+                                    sessionStorage.setItem('fromPath', '/atasan');
+                                    const perspective = selectedBawahan || (localStorage.getItem('username') || sessionStorage.getItem('username') || '');
+                                    sessionStorage.setItem('detailUsername', perspective);
+                                    window.location.href = `/kegiatan/${activity.id || activity.no}`;
+                                  }}
+                                >
                                   <td>{activity.no}</td>
                                   <td><div className="activity-title">{activity.kegiatan}</div></td>
                                   <td>{displayDate}</td>
                                   <td>{activity.jam}</td>
+                                  <td>{activity.pembuat || '-'}</td>
                                   <td><div className="activity-place">{activity.tempat}</div></td>
-                                  <td>
+                                  <td onClick={(e) => e.stopPropagation()}>
                                     {canModify(activity) && (
                                       <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
                                         <button
-                                          onClick={() => handleEdit(activity.no)}
+                                          onClick={() => handleEdit(activity.id || activity.no)}
                                           style={{
                                             padding: '6px 12px',
                                             background: '#FFB300',
@@ -462,7 +553,7 @@ const AtasanPage: React.FC = () => {
                                           ✏️ Edit
                                         </button>
                                         <button
-                                          onClick={() => handleDelete(activity.no)}
+                                          onClick={() => handleDelete(activity.id || activity.no)}
                                           style={{
                                             padding: '6px 12px',
                                             background: '#d32f2f',
@@ -504,6 +595,7 @@ const AtasanPage: React.FC = () => {
                             <th>KEGIATAN</th>
                             <th>TANGGAL</th>
                             <th>JAM</th>
+                            <th>PEMBUAT</th>
                             <th>TEMPAT</th>
                             <th>AKSI</th>
                           </tr>
@@ -534,7 +626,8 @@ const AtasanPage: React.FC = () => {
                                 const today = new Date();
                                 today.setHours(0, 0, 0, 0);
                                 
-                                return activityDate >= tomorrow;
+                                // Show activities from tomorrow onwards (including tomorrow)
+                                return activityDate > today;
                               });
                             
                             if (filteredActivities.length === 0) {
@@ -550,17 +643,28 @@ const AtasanPage: React.FC = () => {
                             return filteredActivities.map((activity: Activity) => {
                               const displayDate = activity.tanggal.includes('-') ? formatDisplayDate(activity.tanggal) : activity.tanggal;
                               return (
-                                <tr key={`tomorrow-${activity.no}`} className="activity-row" style={{ background: '#fff' }}>
+                                <tr 
+                                  key={`tomorrow-${activity.no}`} 
+                                  className="activity-row" 
+                                  style={{ background: '#fff', cursor: 'pointer' }}
+                                  onClick={() => {
+                                    sessionStorage.setItem('fromPath', '/atasan');
+                                    const perspective = selectedBawahan || (localStorage.getItem('username') || sessionStorage.getItem('username') || '');
+                                    sessionStorage.setItem('detailUsername', perspective);
+                                    window.location.href = `/kegiatan/${activity.id || activity.no}`;
+                                  }}
+                                >
                                   <td>{activity.no}</td>
                                   <td><div className="activity-title">{activity.kegiatan}</div></td>
                                   <td>{displayDate}</td>
                                   <td>{activity.jam}</td>
+                                  <td>{activity.pembuat || '-'}</td>
                                   <td><div className="activity-place">{activity.tempat}</div></td>
-                                  <td>
+                                  <td onClick={(e) => e.stopPropagation()}>
                                     {canModify(activity) && (
                                       <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
                                         <button
-                                          onClick={() => handleEdit(activity.no)}
+                                          onClick={() => handleEdit(activity.id || activity.no)}
                                           style={{
                                             padding: '6px 12px',
                                             background: '#FFB300',
@@ -579,7 +683,7 @@ const AtasanPage: React.FC = () => {
                                           ✏️ Edit
                                         </button>
                                         <button
-                                          onClick={() => handleDelete(activity.no)}
+                                          onClick={() => handleDelete(activity.id || activity.no)}
                                           style={{
                                             padding: '6px 12px',
                                             background: '#d32f2f',
@@ -615,8 +719,8 @@ const AtasanPage: React.FC = () => {
                 <h2>KALENDER AGENDA</h2>
                 <CalendarMonth 
                   activities={[
-                    ...(todayActivities.length === 0 ? sampleToday : todayActivities),
-                    ...(tomorrowActivities.length === 0 ? sampleTomorrow : tomorrowActivities)
+                    ...(allTodayActivities.length === 0 ? sampleToday : allTodayActivities),
+                    ...(allTomorrowActivities.length === 0 ? sampleTomorrow : allTomorrowActivities)
                   ]} 
                   fromPath="/atasan"
                 />

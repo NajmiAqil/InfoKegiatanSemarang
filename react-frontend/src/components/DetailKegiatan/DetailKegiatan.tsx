@@ -2,6 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import './DetailKegiatan.css';
 
+interface User {
+  id: number;
+  name: string;
+  username: string;
+  nomor_hp?: string;
+}
+
 interface Activity {
   no: number;
   kegiatan: string;
@@ -30,39 +37,70 @@ const DetailKegiatan = () => {
   const [activity, setActivity] = useState<Activity | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
 
   useEffect(() => {
     fetchActivityDetail();
+    fetchUsers();
   }, [id]);
+
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch('/api/users/approved');
+      const data = await response.json();
+      setUsers(data);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  };
 
   const fetchActivityDetail = async () => {
     try {
       setIsLoading(true);
       setError(null);
       
-      // Fetch all activities and find the one with matching id
-      const response = await fetch('/api/activities');
+      // Fetch specific activity by ID
+      const fromPath = sessionStorage.getItem('fromPath') || '';
+      const username = sessionStorage.getItem('detailUsername') || localStorage.getItem('username') || sessionStorage.getItem('username') || '';
+      const roleParam = fromPath === '/atasan' ? '&role=atasan' : '';
+      const url = `/api/activities/${id}${username ? `?username=${encodeURIComponent(username)}` : ''}${roleParam}`;
+      const response = await fetch(url);
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        if (response.status === 404) {
+          setError('Kegiatan tidak ditemukan');
+        } else if (response.status === 403) {
+          setError('Anda tidak memiliki akses untuk melihat kegiatan ini');
+        } else {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return;
       }
       const data = await response.json();
-      
-      // Combine all activities
-      const allActivities = [...(data.today || []), ...(data.tomorrow || [])];
-      
-      // Find activity by id (no)
-      const foundActivity = allActivities.find((act: Activity) => act.no === Number(id));
-      
-      if (!foundActivity) {
-        setError('Kegiatan tidak ditemukan');
-      } else {
-        setActivity(foundActivity);
-      }
+      setActivity(data);
     } catch (error) {
       console.error('Error fetching activity detail:', error);
       setError('Gagal memuat detail kegiatan');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const getDisplayNamesForOrangTerkait = (orangTerkait: string | undefined) => {
+    if (!orangTerkait) return '';
+    try {
+      const usernames = JSON.parse(orangTerkait);
+      if (!Array.isArray(usernames)) return orangTerkait;
+      return usernames
+        .map(username => {
+          const user = users.find(u => u.username === username);
+          return user
+            ? `${user.name} (${user.nomor_hp || '-'})`
+            : username;
+        })
+        .join(', ');
+    } catch (e) {
+      // If not JSON, return as-is (legacy data)
+      return orangTerkait;
     }
   };
 
@@ -157,7 +195,9 @@ const DetailKegiatan = () => {
             <h1 className="detail-title">{activity.kegiatan}</h1>
             {activity.visibility && (
               <span className={`visibility-badge ${activity.visibility.toLowerCase()}`}>
-                {activity.visibility === 'public' ? '🌐 Publik' : '🔒 Privat'}
+                {activity.visibility === 'public' && '🌐 Publik'}
+                {activity.visibility === 'private' && '🔒 Privat'}
+                {activity.visibility === 'kantor' && '🏢 Kantor'}
               </span>
             )}
           </div>
@@ -284,7 +324,7 @@ const DetailKegiatan = () => {
           {activity.orang_terkait && (
             <div className="detail-section">
               <h3>👥 Orang Terkait</h3>
-              <p>{activity.orang_terkait}</p>
+              <p>{getDisplayNamesForOrangTerkait(activity.orang_terkait)}</p>
             </div>
           )}
 

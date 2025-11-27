@@ -1,7 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import './AddKegiatan.css';
+
+interface User {
+  id: number;
+  username: string;
+  name: string;
+}
 
 const AddKegiatan: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -26,6 +32,35 @@ const AddKegiatan: React.FC = () => {
   const [media, setMedia] = useState<File[]>([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [users, setUsers] = useState<User[]>([]);
+  const [selectedUsers, setSelectedUsers] = useState<string[]>(() => {
+    const creator = localStorage.getItem('username') || sessionStorage.getItem('username') || '';
+    return creator ? [creator] : [];
+  });
+
+  // Fetch users for orang_terkait and ensure creator auto-included
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch('/api/users/approved');
+        if (response.ok) {
+          const data = await response.json();
+          setUsers(data);
+        }
+      } catch (error) {
+        console.error('Error fetching users:', error);
+      }
+    };
+    fetchUsers();
+  }, []);
+
+  // Ensure pembuat always exists in selectedUsers (avoid accidental removal)
+  useEffect(() => {
+    const pembuat = formData.pembuat || localStorage.getItem('username') || sessionStorage.getItem('username') || '';
+    if (pembuat && !selectedUsers.includes(pembuat)) {
+      setSelectedUsers(prev => [pembuat, ...prev]);
+    }
+  }, [formData.pembuat, selectedUsers]);
 
   // Calculate tanggal_berakhir based on jam_mulai and jam_berakhir
   const calculateEndDate = (startDate: string, startTime: string, endTime: string) => {
@@ -78,12 +113,24 @@ const AddKegiatan: React.FC = () => {
     const pembuatValue = formData.pembuat || localStorage.getItem('username') || sessionStorage.getItem('username') || 'Unknown';
     
     Object.entries(formData).forEach(([key, value]) => {
+      // Skip repeat_limit and orang_terkait - handled separately
+      if (key === 'repeat_limit' || key === 'orang_terkait') {
+        return;
+      }
+      
       if (key === 'pembuat') {
         formDataToSend.append(key, pembuatValue);
       } else {
         formDataToSend.append(key, value);
       }
     });
+    
+    // Add selected users as orang_terkait (as JSON array)
+    if (selectedUsers.length > 0) {
+      formDataToSend.append('orang_terkait', JSON.stringify(selectedUsers));
+    } else {
+      formDataToSend.append('orang_terkait', '');
+    }
     
     // If repeat is 'no', don't send repeat_frequency and repeat_end_date
     if (formData.repeat === 'no') {
@@ -97,8 +144,9 @@ const AddKegiatan: React.FC = () => {
       formDataToSend.delete('repeat_end_date');
     }
 
-    media.forEach((file, index) => {
-      formDataToSend.append(`media[${index}]`, file);
+    // Append files using array syntax so Laravel recognizes them as media[]
+    media.forEach((file) => {
+      formDataToSend.append('media[]', file);
     });
 
     // Debug: log form data
@@ -163,6 +211,7 @@ const AddKegiatan: React.FC = () => {
         repeat_end_date: '',
       });
       setMedia([]);
+      setSelectedUsers([]);
       
       // Redirect after 2 seconds
       setTimeout(() => {
@@ -754,14 +803,81 @@ const AddKegiatan: React.FC = () => {
           </div>
 
           <div className="form-group">
-            <label>Orang yang Berhubungan</label>
-            <input
-              type="text"
-              name="orang_terkait"
-              value={formData.orang_terkait}
-              onChange={handleChange}
-              placeholder="Nama orang terkait (opsional)"
-            />
+            <label>Orang yang Terkait</label>
+            <div style={{ marginBottom: '10px' }}>
+              <select
+                onChange={(e) => {
+                  const username = e.target.value;
+                  if (username && !selectedUsers.includes(username)) {
+                    setSelectedUsers([...selectedUsers, username]);
+                  }
+                  e.target.value = '';
+                }}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  borderRadius: '4px',
+                  border: '1px solid #ddd',
+                  fontSize: '1rem'
+                }}
+              >
+                <option value="">Pilih user untuk ditambahkan...</option>
+                {users
+                  .filter(u => {
+                    const pembuat = formData.pembuat || localStorage.getItem('username') || sessionStorage.getItem('username') || '';
+                    return u.username !== pembuat && !selectedUsers.includes(u.username);
+                  })
+                  .map(user => (
+                  <option key={user.id} value={user.username}>
+                    {user.name} (@{user.username})
+                  </option>
+                ))}
+              </select>
+            </div>
+            {selectedUsers.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {selectedUsers.map(username => {
+                  const user = users.find(u => u.username === username);
+                  return (
+                    <div
+                      key={username}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '6px 12px',
+                        background: '#f0f0f0',
+                        borderRadius: '20px',
+                        fontSize: '0.9rem'
+                      }}
+                    >
+                      <span>{user?.name || username}{username === formData.pembuat ? ' (Pembuat)' : ''}</span>
+                      {username !== formData.pembuat && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedUsers(selectedUsers.filter(u => u !== username))}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#666',
+                            cursor: 'pointer',
+                            fontSize: '1.2rem',
+                            padding: '0',
+                            lineHeight: '1'
+                          }}
+                          title="Hapus"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <small style={{ color: '#666', fontSize: '0.85rem', marginTop: '4px', display: 'block' }}>
+              Jika visibility Private, kegiatan akan muncul di jadwal orang yang terkait
+            </small>
           </div>
 
           {error && <div className="error-box">{error}</div>}

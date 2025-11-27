@@ -1,12 +1,18 @@
 import React from 'react';
 import './Sidebar.css';
 
+interface BawahanData {
+  id: number;
+  name: string;
+  username: string;
+}
+
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
   onSelectBawahan: (bawahan: string | null) => void;
   selectedBawahan: string | null;
-  bawahanList: string[];
+  bawahanList: BawahanData[];
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onSelectBawahan, selectedBawahan, bawahanList }) => {
@@ -45,12 +51,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onSelectBawahan, sel
           
           {bawahanList.map((bawahan) => (
             <button
-              key={bawahan}
-              className={`bawahan-item ${selectedBawahan === bawahan ? 'active' : ''}`}
-              onClick={() => handleBawahanClick(bawahan)}
+              key={bawahan.username}
+              className={`bawahan-item ${selectedBawahan === bawahan.username ? 'active' : ''}`}
+              onClick={() => handleBawahanClick(bawahan.username)}
             >
               <span className="bawahan-icon">👤</span>
-              <span className="bawahan-name">{bawahan}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
+                <span className="bawahan-name" style={{ fontWeight: '600' }}>{bawahan.name}</span>
+                <span style={{ fontSize: '0.85em', opacity: 0.8 }}>@{bawahan.username}</span>
+              </div>
             </button>
           ))}
         </div>

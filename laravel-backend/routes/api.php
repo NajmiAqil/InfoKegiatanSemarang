@@ -19,6 +19,7 @@ Route::middleware('api')->group(function () {
     Route::post('/users/register', [UserController::class, 'register']);
     Route::get('/users/pending', [UserController::class, 'getPendingUsers']);
     Route::get('/users/approved-bawahan', [UserController::class, 'getApprovedBawahan']);
+    Route::get('/users/approved', [UserController::class, 'getAllApprovedUsers']);
     Route::post('/users/{id}/approve', [UserController::class, 'approveUser']);
     Route::post('/users/{id}/reject', [UserController::class, 'rejectUser']);
 });
