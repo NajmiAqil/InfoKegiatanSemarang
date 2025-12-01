@@ -12,29 +12,44 @@ class ActivityController extends Controller
     {
         $username = $request->query('username');
         $pembuat = $request->query('pembuat'); // Filter untuk melihat kegiatan bawahan tertentu
-        
-        // Log untuk debugging
-        \Log::info('ActivityController@index called', [
-            'username' => $username,
-            'pembuat' => $pembuat,
-        ]);
+        $role = $request->query('role');
+        $opdFilter = $request->query('opd');
         
         // Get today's date
         $today = date('Y-m-d');
         
-        // Get all activities
-        $query = Activity::orderBy('tanggal')->orderBy('jam_mulai');
+        
+        // Get all activities with optimized column selection
+        $query = Activity::select('id', 'no', 'kegiatan', 'judul', 'tanggal', 'tanggal_berakhir', 
+                       'jam', 'jam_mulai', 'jam_berakhir', 'tempat', 'lokasi', 
+                       'jenis', 'jenis_kegiatan', 'visibility', 'pembuat', 'opd', 
+                       'orang_terkait', 'deskripsi', 'media', 'repeat', 'repeat_frequency', 'repeat_end_date')
+                ->orderBy('tanggal')
+                ->orderBy('jam_mulai');
         
         // Jika ada parameter pembuat, show semua activities dari pembuat tersebut (termasuk private)
         if ($pembuat) {
             $query->where('pembuat', $pembuat);
         } 
-        // Filter activities based on visibility
+        // Filter activities based on visibility + OPD scoping
         elseif ($username) {
-            // Untuk dashboard (atasan/bawahan): show public, kantor, private milik sendiri, dan private yang melibatkan user
-            $query->where(function($q) use ($username) {
-                $q->where('visibility', 'public')
-                  ->orWhere('visibility', 'kantor')
+            // Resolve user's OPD if needed
+            $userOpd = null;
+            if ($username) {
+                $user = \App\Models\User::where('username', $username)->first();
+                $userOpd = $user?->opd;
+            }
+
+            // Untuk dashboard (atasan/bawahan): show public (semua OPD), kantor (same OPD), private milik sendiri, dan private yang melibatkan user
+            $query->where(function($q) use ($username, $userOpd) {
+                $q->where('visibility', 'public') // public TIDAK dibatasi OPD
+                  ->orWhere(function($q2) use ($userOpd) {
+                      // Kantor: hanya tampilkan jika user dan kegiatan di OPD yang sama
+                      $q2->where('visibility', 'kantor')
+                         ->when($userOpd, function($q3) use ($userOpd) {
+                             $q3->whereRaw('LOWER(opd) = ?', [strtolower($userOpd)]);
+                         });
+                  })
                   ->orWhere(function($q2) use ($username) {
                       $q2->where('visibility', 'private')
                          ->where(function($q3) use ($username) {
@@ -45,9 +60,22 @@ class ActivityController extends Controller
                          });
                   });
             });
+
+            // OPD filter opsional untuk atasan (tidak memfilter public, hanya kantor & private)
+            if ($opdFilter) {
+                $query->where(function($q) use ($opdFilter) {
+                    $q->where('visibility', 'public') // public tetap tampil semua
+                      ->orWhereRaw('LOWER(opd) = ?', [strtolower($opdFilter)]); // kantor & private sesuai OPD
+                });
+            }
         } else {
-            // Untuk homepage (InfoDisplay): hanya tampilkan public
+            // Untuk homepage (InfoDisplay): hanya tampilkan public (semua OPD)
             $query->where('visibility', 'public');
+        }
+        
+        // Filter tambahan berdasarkan parameter opdFilter untuk homepage/InfoDisplay
+        if (!$username && $opdFilter && $opdFilter !== 'Semua Divisi') {
+            $query->whereRaw('LOWER(opd) = ?', [strtolower($opdFilter)]);
         }
         
         $allActivities = $query->get();
@@ -73,7 +101,7 @@ class ActivityController extends Controller
     public function store(Request $request)
     {
         // Log incoming request for debugging
-        \Log::info('Activity store request:', [
+        \Log::info('ActivityController@store called', [
             'all_data' => $request->all(),
             'has_files' => $request->hasFile('media')
         ]);
@@ -91,6 +119,7 @@ class ActivityController extends Controller
                 'deskripsi' => 'nullable|string',
                 'orang_terkait' => 'nullable|string',
                 'pembuat' => 'required|string',
+                'opd' => 'nullable|string',
                 'media' => 'nullable|array',
                 'media.*' => 'mimes:jpeg,png,jpg,gif,mp4,avi,mov|max:20480', // max 20MB
                 'repeat' => 'required|in:yes,no',
@@ -129,6 +158,19 @@ class ActivityController extends Controller
         // Auto-generate 'no' based on existing count
         $maxNo = Activity::max('no') ?? 0;
         
+        // Role-based OPD enforcement
+        $username = $request->query('username');
+        $role = $request->query('role');
+        $userOpd = null;
+        if ($username) {
+            $user = \App\Models\User::where('username', $username)->first();
+            $userOpd = $user?->opd;
+        }
+        $opdValue = $validated['opd'] ?? $userOpd;
+        if (($role === 'bawahan') && $userOpd && $opdValue && strtolower($opdValue) !== strtolower($userOpd)) {
+            return response()->json(['message' => 'Forbidden: OPD tidak sesuai dengan akun anda'], 403);
+        }
+
         $activity = Activity::create([
             'no' => $maxNo + 1,
             'kegiatan' => $validated['judul'], // backward compatibility
@@ -146,6 +188,7 @@ class ActivityController extends Controller
             'deskripsi' => $validated['deskripsi'] ?? null,
             'orang_terkait' => $validated['orang_terkait'] ?? null,
             'pembuat' => $validated['pembuat'],
+            'opd' => $opdValue,
             'media' => $mediaPaths,
             'repeat' => $validated['repeat'],
             'repeat_frequency' => $validated['repeat'] === 'yes' ? $validated['repeat_frequency'] : null,
@@ -177,6 +220,14 @@ class ActivityController extends Controller
         if ($activity->visibility === 'kantor') {
             if (!$username) {
                 return response()->json(['message' => 'Unauthorized: login required to view this activity'], 403);
+            }
+            // Kantor visibility: hanya bisa dilihat oleh user di OPD yang sama
+            $user = \App\Models\User::where('username', $username)->first();
+            $userOpd = $user?->opd;
+            $activityOpd = $activity->opd;
+            
+            if (!$userOpd || !$activityOpd || strtolower($userOpd) !== strtolower($activityOpd)) {
+                return response()->json(['message' => 'Forbidden: kegiatan kantor hanya bisa dilihat oleh user di OPD yang sama'], 403);
             }
             return response()->json($activity);
         }
@@ -247,6 +298,7 @@ class ActivityController extends Controller
                 'deskripsi' => 'nullable|string',
                 'orang_terkait' => 'nullable|string',
                 'pembuat' => 'required|string',
+                'opd' => 'nullable|string',
                 'media' => 'nullable|array',
                 'media.*' => 'mimes:jpeg,png,jpg,gif,mp4,avi,mov|max:20480',
                 'repeat' => 'required|in:yes,no',
@@ -258,6 +310,13 @@ class ActivityController extends Controller
                 'message' => 'Validation failed',
                 'errors' => $e->errors()
             ], 422);
+        }
+
+        // Role-based OPD enforcement on update
+        $role = $request->query('role');
+        $opdValue = $validated['opd'] ?? $activity->opd;
+        if (($role === 'bawahan') && $opdValue && $activity->opd && strtolower($opdValue) !== strtolower($activity->opd)) {
+            return response()->json(['message' => 'Forbidden: tidak boleh mengubah OPD kegiatan'], 403);
         }
 
         // Handle file uploads
@@ -289,6 +348,7 @@ class ActivityController extends Controller
             'orang_terkait' => $validated['orang_terkait'] ?? null,
             // Keep original creator; ignore any changes to pembuat
             'pembuat' => $activity->pembuat,
+            'opd' => $opdValue,
             'media' => $mediaPaths,
             'repeat' => $validated['repeat'],
             'repeat_frequency' => $validated['repeat'] === 'yes' ? $validated['repeat_frequency'] : null,

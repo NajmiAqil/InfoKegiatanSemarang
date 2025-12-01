@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import './DetailKegiatan.css';
 
@@ -39,12 +39,16 @@ const DetailKegiatan = () => {
   const [error, setError] = useState<string | null>(null);
   const [users, setUsers] = useState<User[]>([]);
 
+  // Scroll ke atas saat halaman detail dibuka
   useEffect(() => {
-    fetchActivityDetail();
-    fetchUsers();
-  }, [id]);
+    try {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch {
+      window.scrollTo(0, 0);
+    }
+  }, []);
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       const response = await fetch('/api/users/approved');
       const data = await response.json();
@@ -52,17 +56,16 @@ const DetailKegiatan = () => {
     } catch (error) {
       console.error('Error fetching users:', error);
     }
-  };
+  }, []);
 
-  const fetchActivityDetail = async () => {
+  const fetchActivityDetail = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
       
-      // Fetch specific activity by ID
-      const fromPath = sessionStorage.getItem('fromPath') || '';
       const username = sessionStorage.getItem('detailUsername') || localStorage.getItem('username') || sessionStorage.getItem('username') || '';
-      const roleParam = fromPath === '/atasan' ? '&role=atasan' : '';
+      const role = localStorage.getItem('role') || 'bawahan';
+      const roleParam = role ? `&role=${role}` : '';
       const url = `/api/activities/${id}${username ? `?username=${encodeURIComponent(username)}` : ''}${roleParam}`;
       const response = await fetch(url);
       if (!response.ok) {
@@ -83,7 +86,14 @@ const DetailKegiatan = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    fetchActivityDetail();
+    fetchUsers();
+  }, [fetchActivityDetail, fetchUsers]);
+
+  
 
   const getDisplayNamesForOrangTerkait = (orangTerkait: string | undefined) => {
     if (!orangTerkait) return '';
@@ -139,14 +149,9 @@ const DetailKegiatan = () => {
       return '/';
     }
     
-    const usernameLower = username.toLowerCase();
-    
-    // Determine if user is atasan or bawahan
-    if (usernameLower === 'mahes' || usernameLower === 'yani') {
-      return '/bawahan';
-    } else {
-      return '/atasan';
-    }
+    // Use role from localStorage to determine back path
+    const role = localStorage.getItem('role') || 'bawahan';
+    return role === 'atasan' ? '/atasan' : '/bawahan';
   };
 
   if (error || !activity) {
@@ -170,7 +175,7 @@ const DetailKegiatan = () => {
             ← Kembali
           </button>
           <div className="logo-container">
-            <img src="/Diskominfo.jpg" alt="Logo Diskominfo" className="logo-semarang" />
+            <img src="/Diskominfo.jpg" alt="Logo Diskominfo" className="logo-semarang" loading="lazy" />
             <h1>DETAIL KEGIATAN</h1>
           </div>
         </div>
@@ -220,6 +225,7 @@ const DetailKegiatan = () => {
                             alt={`Media kegiatan ${index + 1}`}
                             className="media-image"
                             style={{ maxWidth: '100%', height: 'auto', borderRadius: '8px' }}
+                            loading="lazy"
                           />
                         ) : (
                           <a 
@@ -245,6 +251,7 @@ const DetailKegiatan = () => {
                         alt="Media kegiatan"
                         className="media-image"
                         style={{ maxWidth: '100%', height: 'auto', borderRadius: '8px' }}
+                        loading="lazy"
                       />
                     ) : (
                       <a 

@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { OPD_LIST } from '../constants/opd';
 import './Sidebar.css';
 
 interface BawahanData {
   id: number;
   name: string;
   username: string;
+  opd?: string;
 }
 
 interface SidebarProps {
@@ -16,6 +18,7 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onSelectBawahan, selectedBawahan, bawahanList }) => {
+  const [expandedDivisi, setExpandedDivisi] = useState<string[]>([]);
 
   const handleBawahanClick = (bawahan: string) => {
     if (selectedBawahan === bawahan) {
@@ -28,6 +31,22 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onSelectBawahan, sel
   const handleShowAll = () => {
     onSelectBawahan(null);
   };
+
+  const toggleDivisi = (divisi: string) => {
+    setExpandedDivisi(prev => 
+      prev.includes(divisi) 
+        ? prev.filter(d => d !== divisi)
+        : [...prev, divisi]
+    );
+  };
+
+  // Group bawahan by OPD
+  const bawahanByOpd = OPD_LIST.reduce((acc, opd) => {
+    if (opd !== 'Semua Divisi') {
+      acc[opd] = bawahanList.filter(b => b.opd === opd);
+    }
+    return acc;
+  }, {} as Record<string, BawahanData[]>);
 
   return (
     <>
@@ -49,18 +68,39 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onSelectBawahan, sel
             <span className="bawahan-name">Semua Kegiatan</span>
           </button>
           
-          {bawahanList.map((bawahan) => (
-            <button
-              key={bawahan.username}
-              className={`bawahan-item ${selectedBawahan === bawahan.username ? 'active' : ''}`}
-              onClick={() => handleBawahanClick(bawahan.username)}
-            >
-              <span className="bawahan-icon">👤</span>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
-                <span className="bawahan-name" style={{ fontWeight: '600' }}>{bawahan.name}</span>
-                <span style={{ fontSize: '0.85em', opacity: 0.8 }}>@{bawahan.username}</span>
+          <div className="divisi-separator"></div>
+          
+          {Object.entries(bawahanByOpd).map(([divisi, bawahans]) => (
+            bawahans.length > 0 && (
+              <div key={divisi} className="divisi-group">
+                <button
+                  className="divisi-header"
+                  onClick={() => toggleDivisi(divisi)}
+                >
+                  <span className="divisi-icon">{expandedDivisi.includes(divisi) ? '▼' : '▶'}</span>
+                  <span className="divisi-name">{divisi}</span>
+                  <span className="divisi-count">({bawahans.length})</span>
+                </button>
+                
+                {expandedDivisi.includes(divisi) && (
+                  <div className="bawahan-list">
+                    {bawahans.map((bawahan) => (
+                      <button
+                        key={bawahan.username}
+                        className={`bawahan-item nested ${selectedBawahan === bawahan.username ? 'active' : ''}`}
+                        onClick={() => handleBawahanClick(bawahan.username)}
+                      >
+                        <span className="bawahan-icon">👤</span>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
+                          <span className="bawahan-name" style={{ fontWeight: '600' }}>{bawahan.name}</span>
+                          <span style={{ fontSize: '0.85em', opacity: 0.8 }}>@{bawahan.username}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-            </button>
+            )
           ))}
         </div>
       </div>

@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
-import './AddKegiatan.css';
+import { OPD_OPTIONS } from '../constants/opd';
+import './AddKegiatanDesign.css';
 
 interface User {
   id: number;
@@ -22,6 +23,7 @@ const AddKegiatan: React.FC = () => {
     deskripsi: '',
     orang_terkait: '',
     pembuat: localStorage.getItem('username') || sessionStorage.getItem('username') || '',
+    opd: localStorage.getItem('opd') || 'Diskominfo',
     repeat: 'no',
     repeat_frequency: 'daily',
     repeat_limit: 'no', // yes or no
@@ -40,18 +42,22 @@ const AddKegiatan: React.FC = () => {
 
   // Fetch users for orang_terkait and ensure creator auto-included
   useEffect(() => {
+    let isMounted = true;
     const fetchUsers = async () => {
       try {
         const response = await fetch('/api/users/approved');
-        if (response.ok) {
+        if (response.ok && isMounted) {
           const data = await response.json();
           setUsers(data);
         }
       } catch (error) {
-        console.error('Error fetching users:', error);
+        if (isMounted) {
+          console.error('Error fetching users:', error);
+        }
       }
     };
     fetchUsers();
+    return () => { isMounted = false; };
   }, []);
 
   // Ensure pembuat always exists in selectedUsers (avoid accidental removal)
@@ -63,7 +69,7 @@ const AddKegiatan: React.FC = () => {
   }, [formData.pembuat, selectedUsers]);
 
   // Calculate tanggal_berakhir based on jam_mulai and jam_berakhir
-  const calculateEndDate = (startDate: string, startTime: string, endTime: string) => {
+  const calculateEndDate = useCallback((startDate: string, startTime: string, endTime: string) => {
     if (!startDate || !startTime || !endTime) return startDate;
     
     const [startHour, startMinute] = startTime.split(':').map(Number);
@@ -80,7 +86,7 @@ const AddKegiatan: React.FC = () => {
     }
     
     return startDate;
-  };
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const newFormData = {
@@ -149,26 +155,10 @@ const AddKegiatan: React.FC = () => {
       formDataToSend.append('media[]', file);
     });
 
-    // Debug: log form data
-    console.log('Submitting form data:', {
-      judul: formData.judul,
-      tanggal: formData.tanggal,
-      tanggal_berakhir: formData.tanggal_berakhir,
-      jenis_kegiatan: formData.jenis_kegiatan,
-      jam_mulai: formData.jam_mulai,
-      jam_berakhir: formData.jam_berakhir,
-      lokasi: formData.lokasi,
-      visibility: formData.visibility,
-      repeat: formData.repeat,
-      repeat_frequency: formData.repeat_frequency,
-      repeat_limit: formData.repeat_limit,
-      repeat_end_date: formData.repeat_end_date,
-      pembuat: pembuatValue,
-      mediaCount: media.length
-    });
-
     try {
-      const response = await fetch('/api/activities', {
+      const currentUser = localStorage.getItem('username') || sessionStorage.getItem('username') || '';
+      const currentRole = localStorage.getItem('role') || 'bawahan';
+      const response = await fetch(`/api/activities?username=${encodeURIComponent(currentUser)}&role=${currentRole}`, {
         method: 'POST',
         body: formDataToSend,
       });
@@ -188,8 +178,7 @@ const AddKegiatan: React.FC = () => {
         throw new Error(data?.message || 'Gagal menyimpan kegiatan');
       }
 
-      const responseData = await response.json();
-      console.log('Success response:', responseData);
+      await response.json();
       
       setSuccess('Kegiatan berhasil disimpan!');
       // Reset form
@@ -205,6 +194,7 @@ const AddKegiatan: React.FC = () => {
         deskripsi: '',
         orang_terkait: '',
         pembuat: localStorage.getItem('username') || sessionStorage.getItem('username') || '',
+        opd: localStorage.getItem('opd') || 'Diskominfo',
         repeat: 'no',
         repeat_frequency: 'daily',
         repeat_limit: 'no',
@@ -213,9 +203,10 @@ const AddKegiatan: React.FC = () => {
       setMedia([]);
       setSelectedUsers([]);
       
-      // Redirect after 2 seconds
+      // Redirect after 2 seconds based on user role
       setTimeout(() => {
-        window.location.href = '/atasan';
+        const userRole = localStorage.getItem('role') || 'bawahan';
+        window.location.href = userRole === 'atasan' ? '/atasan' : '/bawahan';
       }, 2000);
     } catch (err: any) {
       console.error('Submit error:', err);
@@ -269,11 +260,11 @@ const AddKegiatan: React.FC = () => {
                 name="tanggal_berakhir"
                 value={formData.tanggal_berakhir}
                 readOnly
-                style={{ background: '#f5f5f5', cursor: 'not-allowed' }}
+                className="readonly-input"
                 title="Otomatis terisi jika jam berakhir melewati tengah malam"
               />
               {formData.tanggal && formData.tanggal_berakhir && formData.tanggal_berakhir !== formData.tanggal && (
-                <small style={{ color: '#f57c00', fontSize: '0.85rem', marginTop: '4px' }}>
+                <small className="hint-warning">
                   ⚠️ Kegiatan berlanjut hingga hari berikutnya
                 </small>
               )}
@@ -673,6 +664,47 @@ const AddKegiatan: React.FC = () => {
           </div>
 
           <div className="form-group">
+            <label>Divisi/OPD *</label>
+            {(() => {
+              const userRole = localStorage.getItem('role') || 'bawahan';
+              const userOpd = localStorage.getItem('opd') || 'Diskominfo';
+              
+              if (userRole === 'bawahan') {
+                // Bawahan: read-only field
+                return (
+                  <input
+                    type="text"
+                    value={userOpd}
+                    disabled
+                    className="input-disabled"
+                  />
+                );
+              } else {
+                // Atasan: dropdown
+                return (
+                  <select
+                    name="opd"
+                    value={formData.opd}
+                    onChange={handleChange}
+                    required
+                  >
+                    {OPD_OPTIONS.map((opd) => (
+                      <option key={opd} value={opd}>
+                        {opd}
+                      </option>
+                    ))}
+                  </select>
+                );
+              }
+            })()}
+            <small className="muted-hint">
+              {localStorage.getItem('role') === 'bawahan' 
+                ? 'Anda hanya bisa membuat kegiatan untuk divisi sendiri'
+                : 'Pilih divisi untuk kegiatan ini'}
+            </small>
+          </div>
+
+          <div className="form-group">
             <label>Repeat *</label>
             <div className="radio-group">
               <label className="radio-label">
@@ -813,13 +845,6 @@ const AddKegiatan: React.FC = () => {
                   }
                   e.target.value = '';
                 }}
-                style={{
-                  width: '100%',
-                  padding: '10px',
-                  borderRadius: '4px',
-                  border: '1px solid #ddd',
-                  fontSize: '1rem'
-                }}
               >
                 <option value="">Pilih user untuk ditambahkan...</option>
                 {users
@@ -835,36 +860,17 @@ const AddKegiatan: React.FC = () => {
               </select>
             </div>
             {selectedUsers.length > 0 && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              <div className="chips">
                 {selectedUsers.map(username => {
                   const user = users.find(u => u.username === username);
                   return (
-                    <div
-                      key={username}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        padding: '6px 12px',
-                        background: '#f0f0f0',
-                        borderRadius: '20px',
-                        fontSize: '0.9rem'
-                      }}
-                    >
+                    <div key={username} className="chip">
                       <span>{user?.name || username}{username === formData.pembuat ? ' (Pembuat)' : ''}</span>
                       {username !== formData.pembuat && (
                         <button
                           type="button"
                           onClick={() => setSelectedUsers(selectedUsers.filter(u => u !== username))}
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            color: '#666',
-                            cursor: 'pointer',
-                            fontSize: '1.2rem',
-                            padding: '0',
-                            lineHeight: '1'
-                          }}
+                          className="chip-remove"
                           title="Hapus"
                         >
                           ×
@@ -875,7 +881,7 @@ const AddKegiatan: React.FC = () => {
                 })}
               </div>
             )}
-            <small style={{ color: '#666', fontSize: '0.85rem', marginTop: '4px', display: 'block' }}>
+            <small className="muted-hint" style={{ display: 'block' }}>
               Jika visibility Private, kegiatan akan muncul di jadwal orang yang terkait
             </small>
           </div>

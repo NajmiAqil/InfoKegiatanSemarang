@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { OPD_LIST } from '../constants/opd';
 import './InfoDisplay/InfoDisplay.css';
 import CalendarMonth from './InfoDisplay/CalendarMonth';
 import type { Activity } from './InfoDisplay/InfoDisplayTypes';
@@ -12,42 +13,23 @@ const BawahanPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'today' | 'tomorrow'>('today');
   const [viewMode, setViewMode] = useState<'table' | 'calendar'>('table');
   const [username, setUsername] = useState('Bawahan');
+  const [userOpd, setUserOpd] = useState<string>('Diskominfo'); // Default OPD
+  const [selectedOpd, setSelectedOpd] = useState<string>('Semua Divisi'); // Filter OPD
 
-  useEffect(() => {
-    // Get name for display from localStorage or sessionStorage
-    const storedName = localStorage.getItem('name') || sessionStorage.getItem('name') || localStorage.getItem('username') || sessionStorage.getItem('username');
-    if (storedName) {
-      setUsername(storedName);
-    }
-
-    const timerID = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-
-    fetchActivities();
-    const fetchIntervalID = setInterval(fetchActivities, 300000);
-
-    return () => {
-      clearInterval(timerID);
-      clearInterval(fetchIntervalID);
-    };
-  }, []);
-
-  const fetchActivities = async () => {
+  const fetchActivities = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
       const storedUser = localStorage.getItem('username') || sessionStorage.getItem('username') || 'Bawahan';
-      console.log('BawahanPage - Fetching activities for username:', storedUser);
-      const response = await fetch(`/api/activities?username=${encodeURIComponent(storedUser)}`);
+      let url = `/api/activities?username=${encodeURIComponent(storedUser)}&role=bawahan`;
+      if (selectedOpd !== 'Semua Divisi') {
+        url += `&opd=${encodeURIComponent(selectedOpd)}`;
+      }
+      const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
-      console.log('BawahanPage - Received activities:', data);
-      console.log('BawahanPage - Today count:', data.today?.length || 0);
-      console.log('BawahanPage - Tomorrow count:', data.tomorrow?.length || 0);
-      console.log('BawahanPage - Tomorrow activities:', data.tomorrow);
       setTodayActivities(data.today || []);
       setTomorrowActivities(data.tomorrow || []);
     } catch (error) {
@@ -70,7 +52,31 @@ const BawahanPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectedOpd]);
+
+  useEffect(() => {
+    // Get name for display from localStorage or sessionStorage
+    const storedName = localStorage.getItem('name') || sessionStorage.getItem('name') || localStorage.getItem('username') || sessionStorage.getItem('username');
+    if (storedName) {
+      setUsername(storedName);
+    }
+
+    // Get user's OPD from localStorage
+    const storedOpd = localStorage.getItem('opd') || 'Diskominfo';
+    setUserOpd(storedOpd);
+
+    const timerID = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    fetchActivities();
+    const fetchIntervalID = setInterval(fetchActivities, 300000);
+
+    return () => {
+      clearInterval(timerID);
+      clearInterval(fetchIntervalID);
+    };
+  }, [selectedOpd, fetchActivities]);
 
   const handleDelete = async (activityId: number) => {
     if (!window.confirm('Apakah Anda yakin ingin menghapus kegiatan ini?')) {
@@ -114,21 +120,6 @@ const BawahanPage: React.FC = () => {
     { no: 2, kegiatan: 'Festival Budaya Kota', tanggal: '11 Nov 2025', jam: '19:00', tempat: 'Alun-Alun', jenis: 'tomorrow' },
   ];
 
-  const getTodayString = () => {
-    const today = new Date();
-    const day = today.getDate().toString().padStart(2, '0');
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-    return `${day} ${monthNames[today.getMonth()]} ${new Date().getFullYear()}`;
-  };
-
-  const getTomorrowString = () => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const day = tomorrow.getDate().toString().padStart(2, '0');
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-    return `${day} ${monthNames[tomorrow.getMonth()]} ${tomorrow.getFullYear()}`;
-  };
-
   // Convert ISO date (2025-11-25) to display format (25 Nov 2025)
   const formatDisplayDate = (isoDate: string) => {
     const date = new Date(isoDate);
@@ -158,7 +149,7 @@ const BawahanPage: React.FC = () => {
     <div className="info-display">
       <header className="header">
         <div className="logo-container">
-          <img src="/Diskominfo.jpg" alt="Logo Diskominfo" className="logo-semarang" />
+            <img src="/Diskominfo.jpg" alt="Logo Diskominfo" className="logo-semarang" loading="lazy" />
           <h1>DASHBOARD BAWAHAN<br />PEMERINTAH KOTA SEMARANG</h1>
         </div>
 
@@ -211,6 +202,29 @@ const BawahanPage: React.FC = () => {
             </button>
           </div>
         </section>
+
+        {/* OPD Filter - Bawahan can view public from other OPDs */}
+        <div className="opd-filter-container">
+          <div className="opd-filter-wrapper">
+            <label htmlFor="opd-select">
+              Filter Divisi:
+            </label>
+            <select
+              id="opd-select"
+              value={selectedOpd}
+              onChange={(e) => setSelectedOpd(e.target.value)}
+            >
+              {OPD_LIST.map((opd) => (
+                <option key={opd} value={opd}>
+                  {opd}
+                </option>
+              ))}
+            </select>
+            <span style={{ fontSize: '12px', color: '#666', fontStyle: 'italic', marginLeft: '10px' }}>
+              (Divisi Anda: {userOpd})
+            </span>
+          </div>
+        </div>
 
         {/* View toggle (Kalender / Tabel) */}
         <div className="view-toggle">
@@ -402,7 +416,6 @@ const BawahanPage: React.FC = () => {
                           {(() => {
                             const filteredActivities = (tomorrowActivities.length === 0 ? sampleTomorrow : tomorrowActivities)
                               .filter((activity: Activity) => {
-                                const displayDate = activity.tanggal.includes('-') ? formatDisplayDate(activity.tanggal) : activity.tanggal;
                                 const tomorrow = new Date();
                                 tomorrow.setDate(tomorrow.getDate() + 1);
                                 tomorrow.setHours(0, 0, 0, 0);
@@ -532,26 +545,26 @@ const BawahanPage: React.FC = () => {
         <footer className="site-footer">
           <div className="footer-container">
             <div className="footer-section footer-about">
-              <img src="/Diskominfo.jpg" alt="Logo Diskominfo" className="footer-logo" />
+              <img src="/Diskominfo.jpg" alt="Logo Diskominfo" className="footer-logo" loading="lazy" />
               <p>Pusat Informasi Jadwal Kegiatan Resmi Pemerintah Kota Semarang. Dikelola oleh Diskominfo Kota Semarang.</p>
               <p>Jl. Pemuda No.148, Sekayu, Semarang Tengah, Kota Semarang</p>
             </div>
             <div className="footer-section footer-links">
               <h4>Tautan Terkait</h4>
               <ul>
-                <li><a href="https://semarangkota.go.id/">Website Resmi Pemkot Semarang</a></li>
-                <li><a href="https://diskominfo.semarangkota.go.id/">Website Diskominfo</a></li>
-                <li><a href="#">Layanan Publik</a></li>
-                <li><a href="#">Peta Situs</a></li>
+                <li><a href="https://semarangkota.go.id/" target="_blank" rel="noopener noreferrer">Website Resmi Pemkot Semarang</a></li>
+                <li><a href="https://diskominfo.semarangkota.go.id/" target="_blank" rel="noopener noreferrer">Website Diskominfo</a></li>
+                <li><a href="https://semarangkota.go.id/layanan" target="_blank" rel="noopener noreferrer">Layanan Publik</a></li>
+                <li><a href="https://semarangkota.go.id/peta-situs" target="_blank" rel="noopener noreferrer">Peta Situs</a></li>
               </ul>
             </div>
             <div className="footer-section footer-social">
               <h4>Media Sosial</h4>
               <div className="social-icons">
-                <a href="#" aria-label="Facebook">F</a>
-                <a href="#" aria-label="Instagram">I</a>
-                <a href="#" aria-label="Twitter">X</a>
-                <a href="#" aria-label="YouTube">Y</a>
+                <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook">F</a>
+                <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">I</a>
+                <a href="https://x.com" target="_blank" rel="noopener noreferrer" aria-label="Twitter / X">X</a>
+                <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" aria-label="YouTube">Y</a>
               </div>
             </div>
           </div>

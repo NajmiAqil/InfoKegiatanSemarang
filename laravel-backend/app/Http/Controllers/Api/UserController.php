@@ -16,12 +16,15 @@ class UserController extends Controller
      */
     public function register(Request $request)
     {
+        \Log::info('User registration attempt', ['username' => $request->username]);
+        
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'username' => 'required|string|max:255|unique:users',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:6',
             'nomor_hp' => 'nullable|string|max:20',
+            'opd' => 'nullable|string|max:255',
         ]);
 
         if ($validator->fails()) {
@@ -37,6 +40,7 @@ class UserController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'nomor_hp' => $request->nomor_hp,
+            'opd' => $request->opd ?? 'Diskominfo',
             'role' => 'bawahan',
             'status' => 'pending',
         ]);
@@ -74,7 +78,7 @@ class UserController extends Controller
         $approvedUsers = User::where('status', 'approved')
             ->where('role', 'bawahan')
             ->orderBy('name', 'asc')
-            ->get(['id', 'name', 'username']);
+            ->get(['id', 'name', 'username', 'opd']);
 
         return response()->json($approvedUsers);
     }
@@ -108,6 +112,8 @@ class UserController extends Controller
 
         $user->status = 'approved';
         $user->save();
+        
+        \Log::info('User approved', ['user_id' => $user->id, 'username' => $user->username]);
 
         // Send approval email
         try {
@@ -148,6 +154,8 @@ class UserController extends Controller
 
         $user->status = 'rejected';
         $user->save();
+        
+        \Log::info('User rejected', ['user_id' => $user->id, 'username' => $user->username]);
 
         // Optionally send rejection email
         try {

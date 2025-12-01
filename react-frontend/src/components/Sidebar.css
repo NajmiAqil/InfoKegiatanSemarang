@@ -38,7 +38,7 @@
 
 .sidebar-header h3 {
   margin: 0;
-  font-size: 1.2rem;
+  font-size: 1.5rem;
   color: #333;
   font-weight: 600;
 }
@@ -46,7 +46,7 @@
 .close-btn {
   background: none;
   border: none;
-  font-size: 2rem;
+  font-size: 2.4rem;
   color: #666;
   cursor: pointer;
   padding: 0;
@@ -73,14 +73,14 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px 16px;
+  padding: 16px 18px;
   margin-bottom: 8px;
   background-color: #f8f9fa;
   border: 2px solid transparent;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-size: 1rem;
+  font-size: 1.2rem;
   color: #333;
   text-align: left;
 }
@@ -102,7 +102,7 @@
 }
 
 .bawahan-icon {
-  font-size: 1.5rem;
+  font-size: 1.8rem;
   line-height: 1;
 }
 
@@ -127,4 +127,66 @@
 
 .sidebar-content::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+/* Divisi Group Styles */
+.divisi-separator {
+  height: 1px;
+  background: #e0e0e0;
+  margin: 10px 0;
+}
+
+.divisi-group {
+  margin-bottom: 8px;
+}
+
+.divisi-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  background-color: #e3f2fd;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #1976d2;
+  text-align: left;
+  margin-bottom: 6px;
+}
+
+.divisi-header:hover {
+  background-color: #bbdefb;
+  transform: translateX(2px);
+}
+
+.divisi-icon {
+  font-size: 1rem;
+  transition: transform 0.2s ease;
+}
+
+.divisi-name {
+  flex: 1;
+  font-size: 1.1rem;
+}
+
+.divisi-count {
+  font-size: 0.95rem;
+  opacity: 0.8;
+  font-weight: 500;
+}
+
+.bawahan-list {
+  margin-left: 10px;
+  margin-bottom: 8px;
+  border-left: 2px solid #bbdefb;
+  padding-left: 8px;
+}
+
+.bawahan-item.nested {
+  padding: 12px 14px;
+  font-size: 1.05rem;
 }

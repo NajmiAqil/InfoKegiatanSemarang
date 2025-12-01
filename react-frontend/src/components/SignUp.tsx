@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { OPD_OPTIONS } from '../constants/opd';
 import './SignUp.css';
 
 const SignUp: React.FC = () => {
@@ -10,12 +11,13 @@ const SignUp: React.FC = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    nomor_hp: ''
+    nomor_hp: '',
+    opd: 'Diskominfo' // Default OPD
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
@@ -62,6 +64,7 @@ const SignUp: React.FC = () => {
           email: formData.email,
           password: formData.password,
           nomor_hp: formData.nomor_hp,
+          opd: formData.opd,
         }),
       });
 
@@ -151,6 +154,23 @@ const SignUp: React.FC = () => {
               pattern="[0-9]+"
               inputMode="numeric"
             />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="opd">Divisi/OPD *</label>
+            <select
+              id="opd"
+              name="opd"
+              value={formData.opd}
+              onChange={handleChange}
+              required
+            >
+              {OPD_OPTIONS.map((opd) => (
+                <option key={opd} value={opd}>
+                  {opd}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="form-group">

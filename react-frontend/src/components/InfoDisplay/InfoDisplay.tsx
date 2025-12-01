@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { OPD_LIST } from '../../constants/opd';
 import './InfoDisplay.css';
 import CalendarMonth from './CalendarMonth';
 import type { Activity, Berita } from './InfoDisplayTypes';
@@ -20,14 +21,28 @@ const InfoDisplay = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedOpd, setSelectedOpd] = useState<string>('Semua Divisi');
+
+  // Helper untuk mengonversi format ISO (YYYY-MM-DD) ke format display (DD MMM YYYY)
+  const formatDisplayDate = useCallback((dateStr: string) => {
+    if (dateStr.includes('-')) {
+      const [year, month, day] = dateStr.split('-');
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+      return `${day} ${monthNames[parseInt(month) - 1]} ${year}`;
+    }
+    return dateStr;
+  }, []);
 
   // ... (Logika fetchActivities) ...
-  const fetchActivities = async () => {
+  const fetchActivities = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
-      // Panggil API Anda
-      const response = await fetch('/api/activities'); 
+      // Panggil API dengan filter OPD jika bukan "Semua Divisi"
+      const url = selectedOpd === 'Semua Divisi' 
+        ? '/api/activities' 
+        : `/api/activities?opd=${encodeURIComponent(selectedOpd)}`;
+      const response = await fetch(url); 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -55,9 +70,9 @@ const InfoDisplay = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectedOpd]);
 
-  const fetchHighlightActivities = async () => {
+  const fetchHighlightActivities = useCallback(async () => {
     try {
       const response = await fetch('/api/activities');
       if (!response.ok) {
@@ -65,9 +80,8 @@ const InfoDisplay = () => {
       }
       const data = await response.json();
       
-      // Gabungkan semua activities dan pastikan hanya public
-      const allActivities = [...(data.today || []), ...(data.tomorrow || [])]
-        .filter((activity: Activity) => activity.visibility === 'public');
+      // Gabungkan semua activities (backend already filters public for homepage)
+      const allActivities = [...(data.today || []), ...(data.tomorrow || [])];
       
       // Filter untuk 3 hari ke depan dari hari ini
       const today = new Date();
@@ -118,7 +132,7 @@ const InfoDisplay = () => {
       console.error('Error fetching highlight activities:', error);
       setNews([]);
     }
-  };
+  }, [formatDisplayDate]);
 
   useEffect(() => {
     const timerID = setInterval(() => {
@@ -136,39 +150,9 @@ const InfoDisplay = () => {
       clearInterval(timerID);
       clearInterval(fetchIntervalID);
     };
-  }, []);
+  }, [selectedOpd, fetchActivities, fetchHighlightActivities]); // Re-fetch when OPD selection changes
 
-  // Helper untuk mendapatkan tanggal hari ini dalam format yang sama dengan data
-  const getTodayString = () => {
-    const today = new Date();
-    const day = today.getDate().toString().padStart(2, '0');
-    const month = (today.getMonth() + 1).toString().padStart(2, '0');
-    const year = today.getFullYear();
-    // Format: 'DD MMM YYYY' (e.g., '23 Nov 2025')
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-    return `${day} ${monthNames[today.getMonth()]} ${year}`;
-  };
-
-  // Helper untuk mendapatkan tanggal besok
-  const getTomorrowString = () => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const day = tomorrow.getDate().toString().padStart(2, '0');
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-    const year = tomorrow.getFullYear();
-    return `${day} ${monthNames[tomorrow.getMonth()]} ${year}`;
-  };
-
-  // Helper untuk mengonversi format ISO (YYYY-MM-DD) ke format display (DD MMM YYYY)
-  const formatDisplayDate = (dateStr: string) => {
-    if (dateStr.includes('-')) {
-      // Format ISO: YYYY-MM-DD
-      const [year, month, day] = dateStr.split('-');
-      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-      return `${day} ${monthNames[parseInt(month) - 1]} ${year}`;
-    }
-    return dateStr; // Sudah dalam format display
-  };
+  // (dipindahkan ke atas untuk dipakai useCallback)
 
   const formatDate = (date: Date) => {
     const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
@@ -193,30 +177,13 @@ const InfoDisplay = () => {
 
   const [activeTab, setActiveTab] = useState<'today' | 'tomorrow'>('today');
   const [viewMode, setViewMode] = useState<'table' | 'calendar'>('table');
-  // ... (Akhir logika) ...
-
-  // Helper untuk mengelompokkan activities berdasarkan tanggal (untuk tampilan kalender sederhana)
-  interface ActivityGroup {
-    date: string;
-    items: Activity[];
-  }
-
-  const groupActivitiesByDate = (activities: Activity[]): ActivityGroup[] => {
-    const map = new Map<string, Activity[]>();
-    activities.forEach(a => {
-      const d = a.tanggal;
-      if (!map.has(d)) map.set(d, []);
-      map.get(d)!.push(a);
-    });
-    return Array.from(map.entries()).map(([date, items]) => ({ date, items }));
-  };
 
 
   return (
     <div className="info-display">
       <header className="header">
         <div className="logo-container">
-          <img src="/Diskominfo.jpg" alt="Logo Diskominfo" className="logo-semarang" />
+          <img src="/Diskominfo.jpg" alt="Logo Diskominfo" className="logo-semarang" loading="lazy" />
           <h1>INFORMASI KEGIATAN<br />PEMERINTAH KOTA SEMARANG</h1>
         </div>
 
@@ -237,6 +204,26 @@ const InfoDisplay = () => {
           </div>
         </div>
       </header>
+
+      {/* OPD Filter Dropdown */}
+      <div className="opd-filter-container">
+        <div className="opd-filter-wrapper">
+          <label htmlFor="opd-select">
+            Filter Divisi:
+          </label>
+          <select
+            id="opd-select"
+            value={selectedOpd}
+            onChange={(e) => setSelectedOpd(e.target.value)}
+          >
+            {OPD_LIST.map((opd) => (
+              <option key={opd} value={opd}>
+                {opd}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
 
       {/* View toggle (Kalender / Tabel) placed above the agenda tabs */}
       <div className="view-toggle">
@@ -343,7 +330,7 @@ const InfoDisplay = () => {
                                 const jamB = (b.jam_mulai || b.jam || '00:00');
                                 return jamA.localeCompare(jamB);
                               })
-                              .map((activity: Activity) => {
+                              .map((activity: Activity, index: number) => {
                                 const startDisplay = formatDisplayDate(activity.tanggal);
                                 const endDisplay = activity.tanggal_berakhir ? formatDisplayDate(activity.tanggal_berakhir) : startDisplay;
                                 const jamTampil = activity.jam_mulai && activity.jam_berakhir
@@ -359,7 +346,7 @@ const InfoDisplay = () => {
                                       navigate(`/kegiatan/${activity.id}`);
                                     }}
                                   >
-                                    <td>{activity.no}</td>
+                                    <td>{index + 1}</td>
                                     <td><div className="activity-title">{activity.kegiatan}</div></td>
                                     <td>{startDisplay === endDisplay ? startDisplay : `${startDisplay} - ${endDisplay}`}</td>
                                     <td>{jamTampil}</td>
@@ -416,7 +403,7 @@ const InfoDisplay = () => {
                                   ...activity,
                                   tanggal: formatDisplayDate(activity.tanggal)
                                 }))
-                                .map((activity: Activity) => (
+                                .map((activity: Activity, index: number) => (
                                   <tr 
                                     key={`tomorrow-${activity.no}`} 
                                     className="activity-row" 
@@ -426,7 +413,7 @@ const InfoDisplay = () => {
                                       navigate(`/kegiatan/${activity.id}`);
                                     }}
                                   >
-                                    <td>{activity.no}</td>
+                                    <td>{index + 1}</td>
                                     <td><div className="activity-title">{activity.kegiatan}</div></td>
                                     <td>{activity.tanggal}</td>
                                     <td>{activity.jam}</td>
@@ -558,26 +545,26 @@ const InfoDisplay = () => {
         <footer className="site-footer">
           <div className="footer-container">
             <div className="footer-section footer-about">
-              <img src="/Diskominfo.jpg" alt="Logo Diskominfo" className="footer-logo" />
+              <img src="/Diskominfo.jpg" alt="Logo Diskominfo" className="footer-logo" loading="lazy" />
               <p>Pusat Informasi Jadwal Kegiatan Resmi Pemerintah Kota Semarang. Dikelola oleh Diskominfo Kota Semarang.</p>
               <p>Jl. Pemuda No.148, Sekayu, Semarang Tengah, Kota Semarang</p>
             </div>
             <div className="footer-section footer-links">
               <h4>Tautan Terkait</h4>
               <ul>
-                <li><a href="https://semarangkota.go.id/">Website Resmi Pemkot Semarang</a></li>
-                <li><a href="https://diskominfo.semarangkota.go.id/">Website Diskominfo</a></li>
-                <li><a href="#">Layanan Publik</a></li>
-                <li><a href="#">Peta Situs</a></li>
+                <li><a href="https://semarangkota.go.id/" target="_blank" rel="noopener noreferrer">Website Resmi Pemkot Semarang</a></li>
+                <li><a href="https://diskominfo.semarangkota.go.id/" target="_blank" rel="noopener noreferrer">Website Diskominfo</a></li>
+                <li><a href="https://semarangkota.go.id/layanan" target="_blank" rel="noopener noreferrer">Layanan Publik</a></li>
+                <li><a href="https://semarangkota.go.id/peta-situs" target="_blank" rel="noopener noreferrer">Peta Situs</a></li>
               </ul>
             </div>
             <div className="footer-section footer-social">
               <h4>Media Sosial</h4>
               <div className="social-icons">
-                <a href="#" aria-label="Facebook">F</a>
-                <a href="#" aria-label="Instagram">I</a>
-                <a href="#" aria-label="Twitter">X</a>
-                <a href="#" aria-label="YouTube">Y</a>
+                <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook">F</a>
+                <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">I</a>
+                <a href="https://x.com" target="_blank" rel="noopener noreferrer" aria-label="Twitter / X">X</a>
+                <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" aria-label="YouTube">Y</a>
               </div>
             </div>
           </div>

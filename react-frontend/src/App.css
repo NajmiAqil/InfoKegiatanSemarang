@@ -9,6 +9,7 @@ html, body {
 /* Use Times New Roman as the global font for the app */
 body {
   font-family: 'Times New Roman', Times, serif;
+  font-size: 18px;
 }
 
 #root {

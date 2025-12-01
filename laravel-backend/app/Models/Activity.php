@@ -23,6 +23,7 @@ class Activity extends Model
         'deskripsi',
         'orang_terkait',
         'pembuat',
+        'opd',
         'media',
         'repeat',
         'repeat_frequency',

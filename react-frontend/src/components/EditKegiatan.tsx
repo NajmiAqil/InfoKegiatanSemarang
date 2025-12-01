@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
-import './AddKegiatan.css';
+import { OPD_OPTIONS } from '../constants/opd';
+import './AddKegiatanDesign.css';
 
 interface User {
   id: number;
@@ -24,6 +25,7 @@ const EditKegiatan: React.FC = () => {
     deskripsi: '',
     orang_terkait: '',
     pembuat: localStorage.getItem('username') || sessionStorage.getItem('username') || '',
+    opd: localStorage.getItem('opd') || 'Diskominfo',
     repeat: 'no',
     repeat_frequency: 'daily',
     repeat_limit: 'no', // yes or no
@@ -39,26 +41,24 @@ const EditKegiatan: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
 
-  useEffect(() => {
-    fetchActivityData();
-    fetchUsers();
-  }, [id]);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       const response = await fetch('/api/users/approved');
-      const data = await response.json();
-      setUsers(data);
+      if (response.ok) {
+        const data = await response.json();
+        setUsers(data);
+      }
     } catch (error) {
       console.error('Error fetching users:', error);
     }
-  };
+  }, []);
 
-  const fetchActivityData = async () => {
+  const fetchActivityData = useCallback(async () => {
     try {
       setIsLoading(true);
       const currentUser = localStorage.getItem('username') || sessionStorage.getItem('username') || '';
-      const response = await fetch(`/api/activities/${id}?username=${encodeURIComponent(currentUser)}`);
+      const currentRole = localStorage.getItem('role') || 'bawahan';
+      const response = await fetch(`/api/activities/${id}?username=${encodeURIComponent(currentUser)}&role=${currentRole}`);
       if (!response.ok) {
         throw new Error('Gagal memuat data kegiatan');
       }
@@ -96,6 +96,7 @@ const EditKegiatan: React.FC = () => {
         deskripsi: data.deskripsi || '',
         orang_terkait: data.orang_terkait || '',
         pembuat: data.pembuat || currentUser,
+        opd: data.opd || localStorage.getItem('opd') || 'Diskominfo',
         repeat: data.repeat || 'no',
         repeat_frequency: data.repeat_frequency || 'daily',
         repeat_limit: data.repeat_end_date ? 'yes' : 'no',
@@ -111,10 +112,15 @@ const EditKegiatan: React.FC = () => {
       setError(error.message || 'Gagal memuat data kegiatan');
       setIsLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    fetchActivityData();
+    fetchUsers();
+  }, [id, fetchActivityData, fetchUsers]);
 
   // Calculate tanggal_berakhir based on jam_mulai and jam_berakhir
-  const calculateEndDate = (startDate: string, startTime: string, endTime: string) => {
+  const calculateEndDate = useCallback((startDate: string, startTime: string, endTime: string) => {
     if (!startDate || !startTime || !endTime) return startDate;
     
     const [startHour, startMinute] = startTime.split(':').map(Number);
@@ -131,7 +137,7 @@ const EditKegiatan: React.FC = () => {
     }
     
     return startDate;
-  };
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const newFormData = {
@@ -139,9 +145,12 @@ const EditKegiatan: React.FC = () => {
       [e.target.name]: e.target.value,
     };
     
-    // Recalculate tanggal_berakhir if tanggal changes
-    if (e.target.name === 'tanggal') {
-      newFormData.tanggal_berakhir = calculateEndDate(e.target.value, formData.jam_mulai, formData.jam_berakhir);
+    // Recalculate tanggal_berakhir if tanggal or jam changes
+    if (e.target.name === 'tanggal' || e.target.name === 'jam_mulai' || e.target.name === 'jam_berakhir') {
+      const tanggal = e.target.name === 'tanggal' ? e.target.value : formData.tanggal;
+      const jamMulai = e.target.name === 'jam_mulai' ? e.target.value : formData.jam_mulai;
+      const jamBerakhir = e.target.name === 'jam_berakhir' ? e.target.value : formData.jam_berakhir;
+      newFormData.tanggal_berakhir = calculateEndDate(tanggal, jamMulai, jamBerakhir);
     }
     
     setFormData(newFormData);
@@ -190,28 +199,12 @@ const EditKegiatan: React.FC = () => {
       formDataToSend.append(`media[${index}]`, file);
     });
 
-    // Debug: log form data
-    console.log('Submitting form data:', {
-      judul: formData.judul,
-      tanggal: formData.tanggal,
-      tanggal_berakhir: formData.tanggal_berakhir,
-      jenis_kegiatan: formData.jenis_kegiatan,
-      jam_mulai: formData.jam_mulai,
-      jam_berakhir: formData.jam_berakhir,
-      lokasi: formData.lokasi,
-      visibility: formData.visibility,
-      repeat: formData.repeat,
-      repeat_frequency: formData.repeat_frequency,
-      repeat_limit: formData.repeat_limit,
-      repeat_end_date: formData.repeat_end_date,
-      pembuat: pembuatValue,
-      mediaCount: media.length
-    });
-
     formDataToSend.append('_method', 'PUT');
 
     try {
-      const response = await fetch(`/api/activities/${id}`, {
+      const currentUser = localStorage.getItem('username') || sessionStorage.getItem('username') || '';
+      const currentRole = localStorage.getItem('role') || 'bawahan';
+      const response = await fetch(`/api/activities/${id}?username=${encodeURIComponent(currentUser)}&role=${currentRole}`, {
         method: 'POST',
         body: formDataToSend,
       });
@@ -231,8 +224,7 @@ const EditKegiatan: React.FC = () => {
         throw new Error(data?.message || 'Gagal menyimpan kegiatan');
       }
 
-      const responseData = await response.json();
-      console.log('Success response:', responseData);
+      await response.json();
       
       setSuccess('Kegiatan berhasil diupdate!');
       
@@ -706,6 +698,50 @@ const EditKegiatan: React.FC = () => {
           </div>
 
           <div className="form-group">
+            <label>Divisi/OPD *</label>
+            {(() => {
+              const userRole = localStorage.getItem('role') || 'bawahan';
+              
+              if (userRole === 'bawahan') {
+                // Bawahan: read-only/disabled
+                return (
+                  <input
+                    type="text"
+                    value={formData.opd}
+                    disabled
+                    style={{
+                      background: '#e9ecef',
+                      cursor: 'not-allowed',
+                      color: '#495057'
+                    }}
+                  />
+                );
+              } else {
+                // Atasan: dropdown
+                return (
+                  <select
+                    name="opd"
+                    value={formData.opd}
+                    onChange={handleChange}
+                    required
+                  >
+                    {OPD_OPTIONS.map((opd) => (
+                      <option key={opd} value={opd}>
+                        {opd}
+                      </option>
+                    ))}
+                  </select>
+                );
+              }
+            })()}
+            <small style={{ color: '#666', fontSize: '0.85rem', marginTop: '4px' }}>
+              {localStorage.getItem('role') === 'bawahan' 
+                ? 'Bawahan tidak bisa mengubah OPD kegiatan'
+                : 'Ubah divisi untuk kegiatan ini jika perlu'}
+            </small>
+          </div>
+
+          <div className="form-group">
             <label>Repeat *</label>
             <div className="radio-group">
               <label className="radio-label">
@@ -808,6 +844,7 @@ const EditKegiatan: React.FC = () => {
                             src={`http://localhost:8000/storage/${mediaFile}`}
                             alt={`Existing media ${index + 1}`}
                             style={{ width: '120px', height: '120px', objectFit: 'cover', borderRadius: '8px', border: '2px solid #ddd' }}
+                            loading="lazy"
                           />
                         ) : (
                           <div style={{ width: '120px', height: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#e0e0e0', borderRadius: '8px', border: '2px solid #ddd' }}>

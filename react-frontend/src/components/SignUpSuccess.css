@@ -30,36 +30,36 @@
 }
 
 .success-icon {
-  width: 100px;
-  height: 100px;
+  width: 120px;
+  height: 120px;
   background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 25px;
-  font-size: 4rem;
+  font-size: 5rem;
   color: white;
   font-weight: bold;
   box-shadow: 0 8px 24px rgba(76, 175, 80, 0.3);
 }
 
 .signup-success-box h1 {
-  font-size: 2rem;
+  font-size: 2.4rem;
   color: #333;
   margin: 0 0 20px 0;
   font-weight: 700;
 }
 
 .success-message {
-  font-size: 1.1rem;
+  font-size: 1.35rem;
   color: #555;
   margin: 0 0 15px 0;
   line-height: 1.6;
 }
 
 .success-info {
-  font-size: 0.95rem;
+  font-size: 1.15rem;
   color: #777;
   margin: 0 0 35px 0;
   line-height: 1.6;
@@ -70,12 +70,12 @@
 }
 
 .back-button {
-  padding: 14px 32px;
+  padding: 16px 36px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
   border-radius: 8px;
-  font-size: 1.1rem;
+  font-size: 1.35rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;

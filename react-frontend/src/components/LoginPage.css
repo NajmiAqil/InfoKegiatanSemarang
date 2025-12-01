@@ -20,7 +20,7 @@
 }
 .login-card h2 {
   margin-bottom: 12px;
-  font-size: 1.5rem;
+  font-size: 1.8rem;
   font-weight: 700;
   text-align: center;
 }
@@ -29,11 +29,12 @@
 .back-button {
   background: transparent;
   border: 2px solid rgba(0,0,0,0.08);
-  padding: 8px 12px;
+  padding: 10px 16px;
   border-radius: 8px;
   cursor: pointer;
   font-weight: 700;
   color: #333;
+  font-size: 1.1rem;
 }
 .back-button:hover { background:#FFD600; }
 .form-group {
@@ -45,16 +46,17 @@
 .form-group label {
   font-weight: 600;
   color: #333;
+  font-size: 1.1rem;
 }
 .form-group input {
-  padding: 8px 10px;
+  padding: 12px 14px;
   border-radius: 6px;
   border: 1px solid #ddd;
-  font-size: 1rem;
+  font-size: 1.2rem;
 }
 .error-message {
   color: #d32f2f;
-  font-size: 0.95rem;
+  font-size: 1.1rem;
   margin-bottom: 8px;
   text-align: center;
 }
@@ -62,9 +64,9 @@
   background: #1976d2;
   color: #fff;
   border: none;
-  padding: 10px 0;
+  padding: 14px 0;
   border-radius: 6px;
-  font-size: 1.1rem;
+  font-size: 1.35rem;
   font-weight: 700;
   cursor: pointer;
   width: 100%;

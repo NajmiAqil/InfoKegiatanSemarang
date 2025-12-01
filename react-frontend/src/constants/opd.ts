@@ -1,0 +1,61 @@
+// Daftar OPD (Organisasi Perangkat Daerah) Kota Semarang
+
+export const OPD_LIST = [
+  'Semua Divisi', // Option untuk melihat semua divisi
+  'Diskominfo',
+  'Dinas Pendidikan',
+  'Dinas Kesehatan',
+  'Dinas Pekerjaan Umum dan Penataan Ruang',
+  'Dinas Perumahan Rakyat dan Kawasan Permukiman',
+  'Dinas Satuan Polisi Pamong Praja',
+  'Dinas Sosial',
+  'Dinas Tenaga Kerja',
+  'Dinas Pemberdayaan Perempuan dan Perlindungan Anak',
+  'Dinas Pangan',
+  'Dinas Lingkungan Hidup',
+  'Dinas Kependudukan dan Pencatatan Sipil',
+  'Dinas Pemberdayaan Masyarakat dan Desa',
+  'Dinas Perhubungan',
+  'Dinas Komunikasi dan Informatika',
+  'Dinas Koperasi, Usaha Kecil dan Menengah',
+  'Dinas Penanaman Modal dan Pelayanan Terpadu Satu Pintu',
+  'Dinas Kepemudaan dan Olahraga',
+  'Dinas Perpustakaan dan Kearsipan',
+  'Dinas Kelautan dan Perikanan',
+  'Dinas Pariwisata',
+  'Dinas Pertanian',
+  'Dinas Perdagangan',
+  'Dinas Perindustrian',
+  'Dinas Energi dan Sumber Daya Mineral',
+  'Sekretariat Daerah',
+  'Sekretariat DPRD',
+  'Inspektorat',
+  'Badan Perencanaan Pembangunan Daerah',
+  'Badan Pengelola Keuangan dan Aset Daerah',
+  'Badan Kepegawaian Daerah',
+  'Badan Penelitian dan Pengembangan',
+  'Badan Penanggulangan Bencana Daerah',
+  'Badan Kesatuan Bangsa dan Politik',
+  'Kecamatan Semarang Tengah',
+  'Kecamatan Semarang Utara',
+  'Kecamatan Semarang Timur',
+  'Kecamatan Semarang Selatan',
+  'Kecamatan Semarang Barat',
+  'Kecamatan Gayamsari',
+  'Kecamatan Genuk',
+  'Kecamatan Pedurungan',
+  'Kecamatan Tembalang',
+  'Kecamatan Banyumanik',
+  'Kecamatan Gunungpati',
+  'Kecamatan Mijen',
+  'Kecamatan Ngaliyan',
+  'Kecamatan Tugu',
+  'Kecamatan Candisari',
+  'Kecamatan Gajahmungkur',
+] as const;
+
+// Type untuk OPD
+export type OPD = typeof OPD_LIST[number];
+
+// Daftar OPD tanpa "Semua Divisi" untuk form input
+export const OPD_OPTIONS = OPD_LIST.filter(opd => opd !== 'Semua Divisi');
