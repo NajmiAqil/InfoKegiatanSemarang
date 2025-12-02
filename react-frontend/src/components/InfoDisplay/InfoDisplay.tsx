@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { OPD_LIST } from '../../constants/opd';
+import { formatDisplayDate, formatDateFull, formatTime, monthNames } from '../../utils/dateUtils';
 import './InfoDisplay.css';
 import CalendarMonth from './CalendarMonth';
 import type { Activity, Berita } from './InfoDisplayTypes';
@@ -23,17 +24,6 @@ const InfoDisplay = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedOpd, setSelectedOpd] = useState<string>('Semua Divisi');
 
-  // Helper untuk mengonversi format ISO (YYYY-MM-DD) ke format display (DD MMM YYYY)
-  const formatDisplayDate = useCallback((dateStr: string) => {
-    if (dateStr.includes('-')) {
-      const [year, month, day] = dateStr.split('-');
-      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-      return `${day} ${monthNames[parseInt(month) - 1]} ${year}`;
-    }
-    return dateStr;
-  }, []);
-
-  // ... (Logika fetchActivities) ...
   const fetchActivities = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -83,7 +73,7 @@ const InfoDisplay = () => {
       // Gabungkan semua activities (backend already filters public for homepage)
       const allActivities = [...(data.today || []), ...(data.tomorrow || [])];
       
-      // Filter untuk 3 hari ke depan dari hari ini
+      // Filter untuk: kegiatan baru dibuat hari ini ATAU kegiatan dalam 3 hari ke depan
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const threeDaysLater = new Date(today);
@@ -94,13 +84,23 @@ const InfoDisplay = () => {
           // Parse tanggal activity
           const activityDateStr = formatDisplayDate(activity.tanggal);
           const [day, monthStr, year] = activityDateStr.split(' ');
-          const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
           const month = monthNames.indexOf(monthStr);
           const activityDate = new Date(Number(year), month, Number(day));
           activityDate.setHours(0, 0, 0, 0);
           
+          // Cek created_at untuk kegiatan baru dibuat hari ini
+          let isNewToday = false;
+          if (activity.created_at) {
+            const createdDate = new Date(activity.created_at);
+            createdDate.setHours(0, 0, 0, 0);
+            isNewToday = createdDate.getTime() === today.getTime();
+          }
+          
           // Cek apakah dalam range hari ini sampai 3 hari ke depan
-          return activityDate >= today && activityDate <= threeDaysLater;
+          const isUpcoming = activityDate >= today && activityDate <= threeDaysLater;
+          
+          // Tampilkan jika baru dibuat hari ini ATAU akan datang dalam 3 hari
+          return isNewToday || isUpcoming;
         })
         .slice(0, 6) // Ambil max 6 kegiatan untuk di-slide
         .map((activity: Activity): Berita => {
@@ -132,7 +132,7 @@ const InfoDisplay = () => {
       console.error('Error fetching highlight activities:', error);
       setNews([]);
     }
-  }, [formatDisplayDate]);
+  }, []); // formatDisplayDate is imported, not a dependency
 
   useEffect(() => {
     const timerID = setInterval(() => {
@@ -154,23 +154,6 @@ const InfoDisplay = () => {
 
   // (dipindahkan ke atas untuk dipakai useCallback)
 
-  const formatDate = (date: Date) => {
-    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-    const months = [
-      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-    ];
-
-    return `${days[date.getDay()]}, ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
-  };
-
-  const formatTime = (date: Date) => {
-    const hours = date.getHours().toString().padStart(2, '0');
-    const minutes = date.getMinutes().toString().padStart(2, '0');
-    const seconds = date.getSeconds().toString().padStart(2, '0');
-    return `${hours}:${minutes}:${seconds} WIB`;
-  };
-
   const handleRetry = () => {
     fetchActivities();
   };
@@ -189,7 +172,7 @@ const InfoDisplay = () => {
 
         <div className="header-right" style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
           <div className="datetime">
-            <div className="date">{formatDate(currentTime)}</div>
+            <div className="date">{formatDateFull(currentTime)}</div>
             <div className="time">{formatTime(currentTime)}</div>
           </div>
           <div

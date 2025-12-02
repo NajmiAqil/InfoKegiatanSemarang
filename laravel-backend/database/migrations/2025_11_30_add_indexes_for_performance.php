@@ -16,6 +16,9 @@ return new class extends Migration
             // Index untuk filtering by date
             $table->index('tanggal', 'idx_activities_tanggal');
             
+            // Index untuk tanggal_berakhir (multi-day events)
+            $table->index('tanggal_berakhir', 'idx_activities_tanggal_berakhir');
+            
             // Index untuk filtering by pembuat
             $table->index('pembuat', 'idx_activities_pembuat');
             
@@ -57,6 +60,7 @@ return new class extends Migration
     {
         Schema::table('activities', function (Blueprint $table) {
             $table->dropIndex('idx_activities_tanggal');
+            $table->dropIndex('idx_activities_tanggal_berakhir');
             $table->dropIndex('idx_activities_pembuat');
             $table->dropIndex('idx_activities_visibility');
             $table->dropIndex('idx_activities_opd');

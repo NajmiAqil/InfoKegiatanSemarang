@@ -1,20 +1,23 @@
 /* Add Kegiatan Page – Clean Modern Styles */
-.add-kegiatan-page {--color-primary:#8e0000;--color-primary-600:#7a0000;--color-accent:#ffb300;--color-accent-600:#f29a00;--color-surface:#ffffff;--color-surface-2:#f8fafc;--color-border:#e5e7eb;--color-ring:rgba(142,0,0,0.25);--color-text:#0f172a;--color-muted:#6b7280;--color-success:#2e7d32;--color-success-bg:#e8f5e9;--color-error:#c62828;--color-error-bg:#ffebee;--radius-lg:16px;--radius-md:10px;--radius-sm:8px;--shadow-sm:0 1px 2px rgba(16,24,40,0.06);--shadow-md:0 8px 24px rgba(16,24,40,0.12);--shadow-lg:0 16px 40px rgba(16,24,40,0.18);min-height:100vh;background:radial-gradient(1200px 600px at 10% -10%,rgba(255,198,115,.15),transparent),radial-gradient(1000px 500px at 90% 0,rgba(142,0,0,.18),transparent),linear-gradient(180deg,#fafafa 0%,#f3f4f6 100%);padding:24px;display:flex;justify-content:center;align-items:flex-start}
-.add-kegiatan-container{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:36px;max-width:1020px;width:100%;margin-top:40px;box-shadow:var(--shadow-lg)}
-.add-kegiatan-header{display:flex;align-items:center;gap:18px;margin-bottom:32px;padding-bottom:18px;border-bottom:2px solid var(--color-border)}
+.add-kegiatan-page {--color-primary:#8e0000;--color-primary-600:#7a0000;--color-accent:#ffb300;--color-accent-600:#f29a00;--color-surface:#ffffff;--color-surface-2:#f8fafc;--color-border:#e5e7eb;--color-ring:rgba(142,0,0,0.25);--color-text:#0f172a;--color-muted:#6b7280;--color-success:#2e7d32;--color-success-bg:#e8f5e9;--color-error:#c62828;--color-error-bg:#ffebee;--radius-lg:16px;--radius-md:10px;--radius-sm:8px;--shadow-sm:0 1px 2px rgba(16,24,40,0.06);--shadow-md:0 8px 24px rgba(16,24,40,0.12);--shadow-lg:0 16px 40px rgba(16,24,40,0.18);min-height:100vh;background:#9B0000;padding:24px;display:flex;justify-content:flex-start;align-items:flex-start;text-align:left}
+.add-kegiatan-container{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:36px;max-width:1020px;width:100%;margin-top:40px;margin-left:40px;box-shadow:var(--shadow-lg);text-align:left}
+.add-kegiatan-header{display:flex;align-items:center;gap:18px;margin-bottom:32px;padding-bottom:18px;border-bottom:2px solid var(--color-border);text-align:left}
 .back-btn{background:var(--color-surface-2);border:1px solid var(--color-border);padding:13px 22px;border-radius:var(--radius-sm);cursor:pointer;font-weight:600;color:var(--color-text);box-shadow:var(--shadow-sm);transition:.2s;font-size:1.2rem}
 .back-btn:hover{background:#eef2f7;transform:translateY(-1px)}
-.add-kegiatan-header h1{color:var(--color-primary);font-size:2.2rem;margin:0;flex:1}
-.add-kegiatan-form{display:flex;flex-direction:column;gap:22px}
+.add-kegiatan-header h1{color:var(--color-primary);font-size:2.2rem;margin:0;flex:1;text-align:left}
+.add-kegiatan-form{display:flex;flex-direction:column;gap:22px;text-align:left}
 .form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:22px}
-.form-group{display:flex;flex-direction:column;gap:9px}
-.form-group label{font-weight:700;color:var(--color-text);font-size:1.15rem}
-.form-group input,.form-group textarea,.form-group select{padding:15px 18px;border:1px solid var(--color-border);border-radius:var(--radius-md);font-size:1.2rem;background:var(--color-surface);font-family:inherit;transition:.2s;box-shadow:var(--shadow-sm)}
+.form-group{display:flex;flex-direction:column;gap:9px;text-align:left}
+.form-group label{font-weight:700;color:var(--color-text);font-size:1.15rem;text-align:left}
+.form-group input,.form-group textarea,.form-group select{padding:15px 18px;border:1px solid var(--color-border);border-radius:var(--radius-md);font-size:1.2rem;background:var(--color-surface);font-family:inherit;transition:.2s;box-shadow:var(--shadow-sm);text-align:left}
 .form-group input:focus,.form-group textarea:focus,.form-group select:focus{outline:none;border-color:var(--color-primary);box-shadow:0 0 0 4px var(--color-ring)}
 .form-group select{cursor:pointer;background-image:linear-gradient(45deg,transparent 50%,var(--color-primary) 50%),linear-gradient(135deg,var(--color-primary) 50%,transparent 50%);background-position:calc(100% - 18px) calc(1em + 4px),calc(100% - 13px) calc(1em + 4px);background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:40px}
 .form-group .quill{border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface);box-shadow:var(--shadow-sm)}
 .form-group .ql-toolbar{border-top-left-radius:var(--radius-md);border-top-right-radius:var(--radius-md);background:var(--color-surface-2);border-bottom:1px solid var(--color-border)}
 .form-group .ql-container{border-bottom-left-radius:var(--radius-md);border-bottom-right-radius:var(--radius-md);min-height:200px;font-size:1.2rem}
+/* Ensure editor text is readable on white editor background */
+.add-kegiatan-page .ql-container .ql-editor{color:#0f172a;caret-color:#0f172a}
+.add-kegiatan-page .ql-container .ql-editor.ql-blank::before{color:#9aa3af}
 .radio-group{display:flex;gap:22px;padding:11px 0}
 .radio-label{display:flex;align-items:center;gap:9px;font-weight:600;cursor:pointer;font-size:1.2rem}
 .radio-label input[type=radio]{width:19px;height:19px;cursor:pointer;accent-color:var(--color-primary)}
@@ -47,8 +50,9 @@
 .btn-cancel{padding:15px 26px;background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:var(--radius-md);font-weight:700;cursor:pointer;transition:.2s;color:var(--color-text);box-shadow:var(--shadow-sm);font-size:1.25rem}
 .btn-cancel:hover{background:#eef2f7;transform:translateY(-1px)}
 .btn-submit{padding:15px 28px;background:var(--color-primary);color:#fff;border:1px solid var(--color-primary);border-radius:var(--radius-md);font-weight:700;cursor:pointer;transition:.2s;box-shadow:0 8px 20px rgba(142,0,0,.25);font-size:1.25rem}
-.btn-submit:hover{background:var(--color-primary-600);border-color:var(--color-primary-600);transform:translateY(-1px)}
+.btn-submit:hover:not(:disabled){background:var(--color-primary-600);border-color:var(--color-primary-600);transform:translateY(-1px)}
 .btn-submit:focus-visible{outline:none;box-shadow:0 0 0 4px var(--color-ring)}
+.btn-submit:disabled,.btn-cancel:disabled{opacity:0.6;cursor:not-allowed;transform:none!important}
 .chips{display:flex;flex-wrap:wrap;gap:9px}
 .chip{display:inline-flex;align-items:center;gap:7px;padding:8px 15px;background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:9999px;font-size:1.1rem;color:var(--color-text)}
 .chip-remove{background:transparent;border:none;color:var(--color-muted);cursor:pointer;font-size:1.4rem;padding:0;line-height:1}

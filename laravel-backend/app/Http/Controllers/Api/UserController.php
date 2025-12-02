@@ -78,7 +78,14 @@ class UserController extends Controller
         $approvedUsers = User::where('status', 'approved')
             ->where('role', 'bawahan')
             ->orderBy('name', 'asc')
-            ->get(['id', 'name', 'username', 'opd']);
+            ->get(['id', 'name', 'username', 'opd'])
+            ->map(function($user) {
+                // Set default OPD to Diskominfo if null/empty
+                if (empty($user->opd)) {
+                    $user->opd = 'Diskominfo';
+                }
+                return $user;
+            });
 
         return response()->json($approvedUsers);
     }

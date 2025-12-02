@@ -23,7 +23,8 @@ class ActivityController extends Controller
         $query = Activity::select('id', 'no', 'kegiatan', 'judul', 'tanggal', 'tanggal_berakhir', 
                        'jam', 'jam_mulai', 'jam_berakhir', 'tempat', 'lokasi', 
                        'jenis', 'jenis_kegiatan', 'visibility', 'pembuat', 'opd', 
-                       'orang_terkait', 'deskripsi', 'media', 'repeat', 'repeat_frequency', 'repeat_end_date')
+                       'orang_terkait', 'deskripsi', 'media', 'repeat', 'repeat_frequency', 
+                       'repeat_end_date', 'is_approved', 'approved_by', 'approved_at')
                 ->orderBy('tanggal')
                 ->orderBy('jam_mulai');
         
@@ -40,14 +41,24 @@ class ActivityController extends Controller
                 $userOpd = $user?->opd;
             }
 
+            // Untuk dashboard (atasan/bawahan): show approved OR own activities
+            $query->where(function($qApproval) use ($username) {
+                $qApproval->where('is_approved', true) // Show approved activities
+                          ->orWhere('pembuat', $username); // Show own activities regardless of approval
+            });
+
             // Untuk dashboard (atasan/bawahan): show public (semua OPD), kantor (same OPD), private milik sendiri, dan private yang melibatkan user
             $query->where(function($q) use ($username, $userOpd) {
                 $q->where('visibility', 'public') // public TIDAK dibatasi OPD
-                  ->orWhere(function($q2) use ($userOpd) {
+                  ->orWhere(function($q2) use ($userOpd, $username) {
                       // Kantor: hanya tampilkan jika user dan kegiatan di OPD yang sama
                       $q2->where('visibility', 'kantor')
-                         ->when($userOpd, function($q3) use ($userOpd) {
-                             $q3->whereRaw('LOWER(opd) = ?', [strtolower($userOpd)]);
+                         ->where(function($q3) use ($userOpd, $username) {
+                             // Tampilkan jika OPD sama ATAU user ada di orang_terkait (lintas OPD)
+                             $q3->when($userOpd, function($q4) use ($userOpd) {
+                                     $q4->whereRaw('LOWER(opd) = ?', [strtolower($userOpd)]);
+                                 })
+                                ->orWhereRaw('LOWER(orang_terkait) LIKE ?', ['%' . strtolower($username) . '%']);
                          });
                   })
                   ->orWhere(function($q2) use ($username) {
@@ -63,14 +74,21 @@ class ActivityController extends Controller
 
             // OPD filter opsional untuk atasan (tidak memfilter public, hanya kantor & private)
             if ($opdFilter) {
-                $query->where(function($q) use ($opdFilter) {
+                $query->where(function($q) use ($opdFilter, $username) {
                     $q->where('visibility', 'public') // public tetap tampil semua
-                      ->orWhereRaw('LOWER(opd) = ?', [strtolower($opdFilter)]); // kantor & private sesuai OPD
+                      ->orWhereRaw('LOWER(opd) = ?', [strtolower($opdFilter)]) // kantor & private sesuai OPD
+                      // Jangan sembunyikan kegiatan lintas OPD jika user terlibat (orang_terkait)
+                      ->orWhere(function($q2) use ($username) {
+                          if ($username) {
+                              $q2->whereRaw('LOWER(orang_terkait) LIKE ?', ['%' . strtolower($username) . '%']);
+                          }
+                      });
                 });
             }
         } else {
-            // Untuk homepage (InfoDisplay): hanya tampilkan public (semua OPD)
-            $query->where('visibility', 'public');
+            // Untuk homepage (InfoDisplay): hanya tampilkan public yang sudah approved
+            $query->where('visibility', 'public')
+                  ->where('is_approved', true);
         }
         
         // Filter tambahan berdasarkan parameter opdFilter untuk homepage/InfoDisplay
@@ -95,7 +113,7 @@ class ActivityController extends Controller
         return response()->json([
             'today' => $todayActivities,
             'tomorrow' => $tomorrowActivities
-        ]);
+        ])->header('Cache-Control', 'public, max-age=30'); // Cache 30 seconds
     }
 
     public function store(Request $request)
@@ -118,6 +136,7 @@ class ActivityController extends Controller
                 'visibility' => 'required|in:public,private,kantor',
                 'deskripsi' => 'nullable|string',
                 'orang_terkait' => 'nullable|string',
+                'external_contacts' => 'nullable|string',
                 'pembuat' => 'required|string',
                 'opd' => 'nullable|string',
                 'media' => 'nullable|array',
@@ -171,6 +190,27 @@ class ActivityController extends Controller
             return response()->json(['message' => 'Forbidden: OPD tidak sesuai dengan akun anda'], 403);
         }
 
+        // Auto-approve logic:
+        // - Atasan can auto-approve their own activities
+        // - Non-public activities (kantor/private) are auto-approved
+        // - Public activities from bawahan need approval
+        $isApproved = false;
+        $approvedBy = null;
+        $approvedAt = null;
+        
+        if ($role === 'atasan') {
+            // Atasan auto-approves their own activities
+            $isApproved = true;
+            $approvedBy = $username;
+            $approvedAt = now();
+        } elseif ($validated['visibility'] !== 'public') {
+            // Non-public activities are auto-approved
+            $isApproved = true;
+            $approvedBy = $username;
+            $approvedAt = now();
+        }
+        // else: public from bawahan requires approval (is_approved = false)
+
         $activity = Activity::create([
             'no' => $maxNo + 1,
             'kegiatan' => $validated['judul'], // backward compatibility
@@ -187,12 +227,16 @@ class ActivityController extends Controller
             'visibility' => $validated['visibility'],
             'deskripsi' => $validated['deskripsi'] ?? null,
             'orang_terkait' => $validated['orang_terkait'] ?? null,
+            'external_contacts' => $validated['external_contacts'] ?? null,
             'pembuat' => $validated['pembuat'],
             'opd' => $opdValue,
             'media' => $mediaPaths,
             'repeat' => $validated['repeat'],
             'repeat_frequency' => $validated['repeat'] === 'yes' ? $validated['repeat_frequency'] : null,
             'repeat_end_date' => $validated['repeat'] === 'yes' ? ($validated['repeat_end_date'] ?? null) : null,
+            'is_approved' => $isApproved,
+            'approved_by' => $approvedBy,
+            'approved_at' => $approvedAt,
         ]);
 
         return response()->json($activity, 201);
@@ -221,11 +265,28 @@ class ActivityController extends Controller
             if (!$username) {
                 return response()->json(['message' => 'Unauthorized: login required to view this activity'], 403);
             }
-            // Kantor visibility: hanya bisa dilihat oleh user di OPD yang sama
+
+            // Jika user ada di orang_terkait, boleh lihat meskipun beda OPD
+            $usernameLower = strtolower($username);
+            $related = [];
+            if (!empty($activity->orang_terkait)) {
+                $decoded = json_decode($activity->orang_terkait, true);
+                if (is_array($decoded)) {
+                    $related = $decoded;
+                } else {
+                    $related = array_filter(array_map('trim', explode(',', (string) $activity->orang_terkait)));
+                }
+            }
+            $relatedLower = array_map(fn($u) => strtolower($u), $related);
+            if (in_array($usernameLower, $relatedLower, true)) {
+                return response()->json($activity);
+            }
+
+            // Jika bukan orang terkait, wajib OPD yang sama
             $user = \App\Models\User::where('username', $username)->first();
             $userOpd = $user?->opd;
             $activityOpd = $activity->opd;
-            
+
             if (!$userOpd || !$activityOpd || strtolower($userOpd) !== strtolower($activityOpd)) {
                 return response()->json(['message' => 'Forbidden: kegiatan kantor hanya bisa dilihat oleh user di OPD yang sama'], 403);
             }
@@ -279,10 +340,31 @@ class ActivityController extends Controller
             return response()->json(['message' => 'Activity not found'], 404);
         }
 
-        // Authorization: only creator can update
+        // Authorization: creator can always update, atasan can update non-private activities
         $username = $request->query('username');
-        if (!$username || $username !== $activity->pembuat) {
-            return response()->json(['message' => 'Forbidden: only the creator can update this activity'], 403);
+        $role = $request->query('role');
+        
+        if (!$username) {
+            return response()->json(['message' => 'Username is required'], 401);
+        }
+        
+        // Check if user is creator
+        $isCreator = $username === $activity->pembuat;
+        
+        // Check if user is atasan and activity is not private
+        $isAtasanAllowed = ($role === 'atasan') && ($activity->visibility !== 'private');
+        
+        // Allow update if user is creator OR (atasan AND not private)
+        if (!$isCreator && !$isAtasanAllowed) {
+            return response()->json([
+                'message' => 'Forbidden: only the creator or atasan (for non-private activities) can update this activity',
+                'debug' => [
+                    'is_creator' => $isCreator,
+                    'is_atasan' => $role === 'atasan',
+                    'visibility' => $activity->visibility,
+                    'allowed' => false
+                ]
+            ], 403);
         }
 
         try {
@@ -297,6 +379,7 @@ class ActivityController extends Controller
                 'visibility' => 'required|in:public,private,kantor',
                 'deskripsi' => 'nullable|string',
                 'orang_terkait' => 'nullable|string',
+                'external_contacts' => 'nullable|string',
                 'pembuat' => 'required|string',
                 'opd' => 'nullable|string',
                 'media' => 'nullable|array',
@@ -346,6 +429,7 @@ class ActivityController extends Controller
             'visibility' => $validated['visibility'],
             'deskripsi' => $validated['deskripsi'] ?? null,
             'orang_terkait' => $validated['orang_terkait'] ?? null,
+            'external_contacts' => $validated['external_contacts'] ?? null,
             // Keep original creator; ignore any changes to pembuat
             'pembuat' => $activity->pembuat,
             'opd' => $opdValue,
@@ -366,14 +450,95 @@ class ActivityController extends Controller
             return response()->json(['message' => 'Activity not found'], 404);
         }
 
-        // Authorization: only creator can delete
+        // Authorization: creator can delete, atasan can delete non-private activities
         $username = $request->query('username');
-        if (!$username || $username !== $activity->pembuat) {
-            return response()->json(['message' => 'Forbidden: only the creator can delete this activity'], 403);
+        $role = $request->query('role');
+        
+        // Debug logging
+        \Log::info('Delete attempt', [
+            'username' => $username,
+            'role' => $role,
+            'pembuat' => $activity->pembuat,
+            'visibility' => $activity->visibility,
+            'activity_id' => $id
+        ]);
+        
+        if (!$username) {
+            return response()->json([
+                'message' => 'Username is required',
+                'debug' => ['username' => $username, 'pembuat' => $activity->pembuat]
+            ], 401);
+        }
+        
+        // Check if user is creator
+        $isCreator = $username === $activity->pembuat;
+        
+        // Check if user is atasan and activity is not private
+        $isAtasanAllowed = ($role === 'atasan') && ($activity->visibility !== 'private');
+        
+        // Allow delete if user is creator OR (atasan AND not private)
+        if (!$isCreator && !$isAtasanAllowed) {
+            return response()->json([
+                'message' => 'Forbidden: only the creator or atasan (for non-private activities) can delete this activity',
+                'debug' => [
+                    'your_username' => $username,
+                    'activity_creator' => $activity->pembuat,
+                    'is_creator' => $isCreator,
+                    'is_atasan' => $role === 'atasan',
+                    'visibility' => $activity->visibility,
+                    'allowed' => false
+                ]
+            ], 403);
         }
 
         $activity->delete();
         
         return response()->json(['message' => 'Activity deleted successfully']);
+    }
+
+    public function getPendingApproval(Request $request)
+    {
+        // Only atasan can view pending approvals
+        $role = $request->query('role');
+        if ($role !== 'atasan') {
+            return response()->json(['message' => 'Forbidden: only atasan can view pending approvals'], 403);
+        }
+
+        // Get all public activities that are not yet approved
+        $pendingActivities = Activity::where('visibility', 'public')
+            ->where('is_approved', false)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json($pendingActivities);
+    }
+
+    public function approveActivity(Request $request, $id)
+    {
+        // Only atasan can approve
+        $role = $request->query('role');
+        $username = $request->query('username');
+        
+        if ($role !== 'atasan') {
+            return response()->json(['message' => 'Forbidden: only atasan can approve activities'], 403);
+        }
+
+        $activity = Activity::find($id);
+        
+        if (!$activity) {
+            return response()->json(['message' => 'Activity not found'], 404);
+        }
+
+        // Update approval status
+        $activity->update([
+            'is_approved' => true,
+            'approved_by' => $username,
+            'approved_at' => now(),
+        ]);
+
+        return response()->json([
+            'message' => 'Activity approved successfully',
+            'activity' => $activity
+        ]);
     }
 }

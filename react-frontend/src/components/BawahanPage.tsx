@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { OPD_LIST } from '../constants/opd';
+import { formatDisplayDate, formatDateFull, formatTime } from '../utils/dateUtils';
 import './InfoDisplay/InfoDisplay.css';
 import CalendarMonth from './InfoDisplay/CalendarMonth';
 import type { Activity } from './InfoDisplay/InfoDisplayTypes';
@@ -85,12 +86,16 @@ const BawahanPage: React.FC = () => {
 
     try {
       const currentUser = localStorage.getItem('username') || sessionStorage.getItem('username') || '';
+      console.log('Delete attempt - User:', currentUser, 'Activity ID:', activityId);
       const response = await fetch(`/api/activities/${activityId}?username=${encodeURIComponent(currentUser)}`, {
         method: 'DELETE',
       });
 
       if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        console.error('Delete failed:', response.status, errorData);
         if (response.status === 403) {
+          alert(`Tidak berhak menghapus: ${errorData.message}`);
           throw new Error('Anda tidak berhak menghapus kegiatan ini');
         }
         throw new Error('Gagal menghapus kegiatan');
@@ -110,7 +115,14 @@ const BawahanPage: React.FC = () => {
 
   const canModify = (activity: Activity) => {
     const currentUser = localStorage.getItem('username') || sessionStorage.getItem('username');
-    return activity.pembuat === currentUser;
+    const canEdit = activity.pembuat === currentUser;
+    console.log('canModify check:', { 
+      activityId: activity.id || activity.no, 
+      pembuat: activity.pembuat, 
+      currentUser, 
+      canEdit 
+    });
+    return canEdit;
   };
 
   const sampleToday: Activity[] = [];
@@ -120,21 +132,12 @@ const BawahanPage: React.FC = () => {
     { no: 2, kegiatan: 'Festival Budaya Kota', tanggal: '11 Nov 2025', jam: '19:00', tempat: 'Alun-Alun', jenis: 'tomorrow' },
   ];
 
-  // Convert ISO date (2025-11-25) to display format (25 Nov 2025)
-  const formatDisplayDate = (isoDate: string) => {
-    const date = new Date(isoDate);
-    const day = date.getDate().toString().padStart(2, '0');
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-    return `${day} ${monthNames[date.getMonth()]} ${date.getFullYear()}`;
-  };
-
-  const formatDate = (date: Date) => {
+  const formatDateFull = (date: Date) => {
     const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
     const months = [
       'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
       'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
     ];
-
     return `${days[date.getDay()]}, ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
   };
 
@@ -155,7 +158,7 @@ const BawahanPage: React.FC = () => {
 
         <div className="header-right" style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
           <div className="datetime">
-            <div className="date">{formatDate(currentTime)}</div>
+            <div className="date">{formatDateFull(currentTime)}</div>
             <div className="time">{formatTime(currentTime)}</div>
           </div>
           <div

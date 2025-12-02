@@ -40,13 +40,27 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onSelectBawahan, sel
     );
   };
 
-  // Group bawahan by OPD
-  const bawahanByOpd = OPD_LIST.reduce((acc, opd) => {
-    if (opd !== 'Semua Divisi') {
-      acc[opd] = bawahanList.filter(b => b.opd === opd);
-    }
+  // Helper: map opd value to a display label from OPD_LIST (case-insensitive)
+  const resolveOpdLabel = (raw?: string | null) => {
+    const value = (raw || '').trim();
+    if (!value) return 'Diskominfo'; // Default to Diskominfo instead of "Tanpa Divisi"
+    const match = OPD_LIST.find(o => o.toLowerCase() === value.toLowerCase());
+    return match ?? value; // fallback to raw value if not in list
+  };
+
+  // Group bawahan by resolved OPD label. This ensures users with
+  // unknown/null OPD still appear under "Tanpa Divisi".
+  const bawahanByOpd = bawahanList.reduce((acc, b) => {
+    const label = resolveOpdLabel(b.opd);
+    if (!acc[label]) acc[label] = [];
+    acc[label].push(b);
     return acc;
   }, {} as Record<string, BawahanData[]>);
+
+  // Sort OPD groups alphabetically
+  const sortedOpdEntries = Object.entries(bawahanByOpd).sort(([a], [b]) => {
+    return a.localeCompare(b);
+  });
 
   return (
     <>
@@ -70,7 +84,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onSelectBawahan, sel
           
           <div className="divisi-separator"></div>
           
-          {Object.entries(bawahanByOpd).map(([divisi, bawahans]) => (
+          {sortedOpdEntries.map(([divisi, bawahans]) => (
             bawahans.length > 0 && (
               <div key={divisi} className="divisi-group">
                 <button

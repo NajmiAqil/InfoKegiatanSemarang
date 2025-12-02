@@ -22,15 +22,20 @@ class Activity extends Model
         'visibility',
         'deskripsi',
         'orang_terkait',
+        'external_contacts',
         'pembuat',
         'opd',
         'media',
         'repeat',
         'repeat_frequency',
         'repeat_end_date',
+        'is_approved',
+        'approved_by',
+        'approved_at',
     ];
 
     protected $casts = [
         'media' => 'array',
+        'external_contacts' => 'array',
     ];
 }

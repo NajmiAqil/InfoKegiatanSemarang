@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { OPD_LIST } from '../constants/opd';
+import { formatDisplayDate, formatDateFull, formatTime } from '../utils/dateUtils';
 import './InfoDisplay/InfoDisplay.css';
 import CalendarMonth from './InfoDisplay/CalendarMonth';
 import Sidebar from './Sidebar';
@@ -35,6 +36,7 @@ const AtasanPage: React.FC = () => {
   const [selectedBawahan, setSelectedBawahan] = useState<string | null>(null);
   const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
   const [approvedBawahan, setApprovedBawahan] = useState<ApprovedBawahan[]>([]);
+  const [pendingActivities, setPendingActivities] = useState<Activity[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [selectedOpd, setSelectedOpd] = useState<string>('Semua Divisi');
 
@@ -64,6 +66,19 @@ const AtasanPage: React.FC = () => {
       }
     } catch (error) {
       console.error('Error fetching approved bawahan:', error);
+    }
+  };
+
+  const fetchPendingActivities = async () => {
+    try {
+      const storedUser = localStorage.getItem('username') || sessionStorage.getItem('username') || 'Atasan';
+      const response = await fetch(`/api/activities-pending-approval?role=atasan&username=${encodeURIComponent(storedUser)}`);
+      if (response.ok) {
+        const data = await response.json();
+        setPendingActivities(data);
+      }
+    } catch (error) {
+      console.error('Error fetching pending activities:', error);
     }
   };
 
@@ -145,6 +160,7 @@ const AtasanPage: React.FC = () => {
     fetchActivities();
     fetchPendingUsers();
     fetchApprovedBawahan();
+    fetchPendingActivities();
     const fetchIntervalID = setInterval(fetchActivities, 300000);
 
     return () => {
@@ -173,9 +189,40 @@ const AtasanPage: React.FC = () => {
 
       alert('Kegiatan berhasil dihapus');
       fetchActivities();
+      fetchPendingActivities(); // Refresh pending list if deleted from there
     } catch (error) {
       console.error('Error deleting activity:', error);
       alert('Gagal menghapus kegiatan. Silakan coba lagi.');
+    }
+  };
+
+  const handleApproveActivity = async (activityId: number) => {
+    if (!window.confirm('Apakah Anda yakin ingin mengizinkan kegiatan ini untuk dipublikasikan?')) {
+      return;
+    }
+
+    try {
+      const currentUser = localStorage.getItem('username') || sessionStorage.getItem('username') || '';
+      const response = await fetch(`/api/activities/${activityId}/approve?username=${encodeURIComponent(currentUser)}&role=atasan`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 403) {
+          throw new Error('Anda tidak berhak menyetujui kegiatan ini');
+        }
+        throw new Error('Gagal menyetujui kegiatan');
+      }
+
+      alert('Kegiatan berhasil disetujui dan dapat dilihat oleh semua orang');
+      fetchPendingActivities(); // Refresh pending list
+      fetchActivities(); // Refresh main activities
+    } catch (error) {
+      console.error('Error approving activity:', error);
+      alert('Gagal menyetujui kegiatan. Silakan coba lagi.');
     }
   };
 
@@ -236,24 +283,27 @@ const AtasanPage: React.FC = () => {
 
   const canModify = (activity: Activity) => {
     const currentUser = localStorage.getItem('username') || sessionStorage.getItem('username');
-    return activity.pembuat === currentUser;
+    const currentRole = localStorage.getItem('role') || 'bawahan';
+    
+    // Creator can always modify
+    if (activity.pembuat === currentUser) {
+      return true;
+    }
+    
+    // Atasan can modify all non-private activities
+    if (currentRole === 'atasan' && activity.visibility !== 'private') {
+      return true;
+    }
+    
+    return false;
   };
 
-  // Convert ISO date (2025-11-25) to display format (25 Nov 2025)
-  const formatDisplayDate = (isoDate: string) => {
-    const date = new Date(isoDate);
-    const day = date.getDate().toString().padStart(2, '0');
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-    return `${day} ${monthNames[date.getMonth()]} ${date.getFullYear()}`;
-  };
-
-  const formatDate = (date: Date) => {
+  const formatDateFull = (date: Date) => {
     const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
     const months = [
       'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
       'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
     ];
-
     return `${days[date.getDay()]}, ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
   };
 
@@ -309,7 +359,7 @@ const AtasanPage: React.FC = () => {
 
         <div className="header-right" style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
           <div className="datetime">
-            <div className="date">{formatDate(currentTime)}</div>
+            <div className="date">{formatDateFull(currentTime)}</div>
             <div className="time">{formatTime(currentTime)}</div>
           </div>
           <div
@@ -743,6 +793,122 @@ const AtasanPage: React.FC = () => {
             )}
           </>
         )}
+
+        {/* Izin Publish Section - NEW */}
+        <section className="agenda-section" style={{ marginTop: '30px' }}>
+          <h2>Izin Publish Kegiatan Publik</h2>
+          {pendingActivities.length === 0 ? (
+            <p style={{ textAlign: 'center', padding: '20px', color: '#666' }}>Tidak ada kegiatan menunggu persetujuan</p>
+          ) : (
+            <div className="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>No</th>
+                    <th>Judul</th>
+                    <th>Tanggal</th>
+                    <th>Waktu</th>
+                    <th>Pembuat</th>
+                    <th>OPD</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pendingActivities.map((activity, index) => (
+                    <tr key={activity.id}>
+                      <td>{index + 1}</td>
+                      <td style={{ fontWeight: 600, color: '#1976d2' }}>{activity.judul || activity.kegiatan}</td>
+                      <td>{formatDisplayDate(activity.tanggal)}</td>
+                      <td>{activity.jam_mulai} - {activity.jam_berakhir} WIB</td>
+                      <td>{activity.pembuat}</td>
+                      <td>{activity.opd || '-'}</td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                          <button
+                            onClick={() => window.location.href = `/detail/${activity.id}`}
+                            style={{
+                              padding: '6px 12px',
+                              background: '#2196F3',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '0.85rem',
+                              fontWeight: '600',
+                              transition: 'background 0.2s'
+                            }}
+                            onMouseOver={(e) => e.currentTarget.style.background = '#1976D2'}
+                            onMouseOut={(e) => e.currentTarget.style.background = '#2196F3'}
+                            title="Lihat detail kegiatan"
+                          >
+                            👁️ Detail
+                          </button>
+                          <button
+                            onClick={() => window.location.href = `/edit/${activity.id}`}
+                            style={{
+                              padding: '6px 12px',
+                              background: '#FFB300',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '0.85rem',
+                              fontWeight: '600',
+                              transition: 'background 0.2s'
+                            }}
+                            onMouseOver={(e) => e.currentTarget.style.background = '#FFA000'}
+                            onMouseOut={(e) => e.currentTarget.style.background = '#FFB300'}
+                            title="Edit kegiatan"
+                          >
+                            ✏️ Edit
+                          </button>
+                          <button
+                            onClick={() => handleDelete(activity.id || 0)}
+                            style={{
+                              padding: '6px 12px',
+                              background: '#f44336',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '0.85rem',
+                              fontWeight: '600',
+                              transition: 'background 0.2s'
+                            }}
+                            onMouseOver={(e) => e.currentTarget.style.background = '#d32f2f'}
+                            onMouseOut={(e) => e.currentTarget.style.background = '#f44336'}
+                            title="Hapus kegiatan"
+                          >
+                            🗑️ Hapus
+                          </button>
+                          <button
+                            onClick={() => handleApproveActivity(activity.id || 0)}
+                            style={{
+                              padding: '6px 12px',
+                              background: '#4caf50',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '0.85rem',
+                              fontWeight: '600',
+                              transition: 'background 0.2s'
+                            }}
+                            onMouseOver={(e) => e.currentTarget.style.background = '#388e3c'}
+                            onMouseOut={(e) => e.currentTarget.style.background = '#4caf50'}
+                            title="Izinkan publikasi"
+                          >
+                            ✓ Izinkan
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
 
         {/* Permintaan Akses Section */}
         <section className="agenda-section" style={{ marginTop: '30px' }}>

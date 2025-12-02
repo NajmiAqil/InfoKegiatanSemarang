@@ -1,7 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { OPD_OPTIONS } from '../constants/opd';
+import { calculateEndDate, formatDateFull, formatTime } from '../utils/dateUtils';
+import './InfoDisplay/InfoDisplay.css';
 import './AddKegiatanDesign.css';
 
 interface User {
@@ -10,7 +12,17 @@ interface User {
   name: string;
 }
 
+interface ExternalContact {
+  name: string;
+  phone: string;
+  email: string;
+}
+
 const AddKegiatan: React.FC = () => {
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [username, setUsername] = useState<string>('');
+  const [hasExternalContacts, setHasExternalContacts] = useState<boolean>(false);
+  const [externalContacts, setExternalContacts] = useState<ExternalContact[]>([]);
   const [formData, setFormData] = useState({
     judul: '',
     tanggal: '',
@@ -34,11 +46,20 @@ const AddKegiatan: React.FC = () => {
   const [media, setMedia] = useState<File[]>([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>(() => {
     const creator = localStorage.getItem('username') || sessionStorage.getItem('username') || '';
     return creator ? [creator] : [];
   });
+
+  // Header clock + username
+  useEffect(() => {
+    const storedName = localStorage.getItem('name') || sessionStorage.getItem('name') || localStorage.getItem('username') || sessionStorage.getItem('username') || '';
+    if (storedName) setUsername(storedName);
+    const timerID = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timerID);
+  }, []);
 
   // Fetch users for orang_terkait and ensure creator auto-included
   useEffect(() => {
@@ -68,26 +89,6 @@ const AddKegiatan: React.FC = () => {
     }
   }, [formData.pembuat, selectedUsers]);
 
-  // Calculate tanggal_berakhir based on jam_mulai and jam_berakhir
-  const calculateEndDate = useCallback((startDate: string, startTime: string, endTime: string) => {
-    if (!startDate || !startTime || !endTime) return startDate;
-    
-    const [startHour, startMinute] = startTime.split(':').map(Number);
-    const [endHour, endMinute] = endTime.split(':').map(Number);
-    
-    const startMinutes = startHour * 60 + startMinute;
-    const endMinutes = endHour * 60 + endMinute;
-    
-    // If end time is less than or equal to start time, it means next day
-    if (endMinutes <= startMinutes) {
-      const date = new Date(startDate);
-      date.setDate(date.getDate() + 1);
-      return date.toISOString().split('T')[0];
-    }
-    
-    return startDate;
-  }, []);
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const newFormData = {
       ...formData,
@@ -103,15 +104,51 @@ const AddKegiatan: React.FC = () => {
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setMedia(Array.from(e.target.files));
+    if (!e.target.files) return;
+    const files = Array.from(e.target.files);
+    const allowedTypes = [
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'video/mp4',
+      'video/avi',
+      'video/quicktime', // .mov
+    ];
+    const maxBytes = 20 * 1024 * 1024; // 20MB (match backend)
+
+    const rejected: string[] = [];
+    const accepted: File[] = [];
+
+    files.forEach((file) => {
+      if (!allowedTypes.includes(file.type)) {
+        rejected.push(`${file.name} (tipe tidak didukung)`);
+        return;
+      }
+      if (file.size > maxBytes) {
+        rejected.push(`${file.name} (lebih dari 20MB)`);
+        return;
+      }
+      accepted.push(file);
+    });
+
+    if (rejected.length > 0) {
+      setError(`Beberapa file ditolak:\n- ${rejected.join('\n- ')}\nTipe yang diizinkan: JPG, PNG, GIF, MP4, AVI, MOV. Maks 20MB per file.`);
+    } else {
+      setError('');
     }
+
+    setMedia(accepted);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Prevent double submit
+    if (isSubmitting) return;
+    
     setError('');
     setSuccess('');
+    setIsSubmitting(true);
 
     const formDataToSend = new FormData();
     
@@ -136,6 +173,11 @@ const AddKegiatan: React.FC = () => {
       formDataToSend.append('orang_terkait', JSON.stringify(selectedUsers));
     } else {
       formDataToSend.append('orang_terkait', '');
+    }
+
+    // Add external contacts if any
+    if (hasExternalContacts && externalContacts.length > 0) {
+      formDataToSend.append('external_contacts', JSON.stringify(externalContacts));
     }
     
     // If repeat is 'no', don't send repeat_frequency and repeat_end_date
@@ -202,6 +244,8 @@ const AddKegiatan: React.FC = () => {
       });
       setMedia([]);
       setSelectedUsers([]);
+      setHasExternalContacts(false);
+      setExternalContacts([]);
       
       // Redirect after 2 seconds based on user role
       setTimeout(() => {
@@ -211,24 +255,57 @@ const AddKegiatan: React.FC = () => {
     } catch (err: any) {
       console.error('Submit error:', err);
       setError(err.message || 'Terjadi kesalahan saat menyimpan kegiatan');
+      setIsSubmitting(false);
     }
   };
+  // Date helpers to align with other pages
+
 
   return (
-    <div className="add-kegiatan-page">
-      <div className="add-kegiatan-container">
-        <div className="add-kegiatan-header">
-          <button
-            type="button"
-            className="back-btn"
-            onClick={() => window.history.back()}
-          >
-            ← Kembali
-          </button>
-          <h1>Tambah Kegiatan Baru</h1>
+    <div className="info-display">
+      <header className="header">
+        <div className="logo-container">
+          <img src="/Diskominfo.jpg" alt="Logo Diskominfo" className="logo-semarang" loading="lazy" />
+          <h1>DASHBOARD KEGIATAN<br />PEMERINTAH KOTA SEMARANG</h1>
         </div>
 
-        <form onSubmit={handleSubmit} className="add-kegiatan-form">
+        <div className="header-right" style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
+          <div className="datetime">
+            <div className="date">{formatDateFull(currentTime)}</div>
+            <div className="time">{formatTime(currentTime)}</div>
+          </div>
+          <div
+            className="login-box"
+            role="button"
+            tabIndex={0}
+            onClick={() => (window.location.href = '/')}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { window.location.href = '/'; } }}
+            aria-label="Logout"
+          >
+            Logout
+          </div>
+        </div>
+      </header>
+
+      <main className="content">
+        <section className="agenda-section">
+          <h2>Selamat Datang{username ? `, ${username}` : ''}</h2>
+        </section>
+
+        <div className="add-kegiatan-page">
+          <div className="add-kegiatan-container">
+            <div className="add-kegiatan-header">
+              <button
+                type="button"
+                className="back-btn"
+                onClick={() => window.history.back()}
+              >
+                ← Kembali
+              </button>
+              <h1>Tambah Kegiatan Baru</h1>
+            </div>
+
+            <form onSubmit={handleSubmit} className="add-kegiatan-form">
           <div className="form-row">
             <div className="form-group">
               <label>Judul Kegiatan *</label>
@@ -886,19 +963,184 @@ const AddKegiatan: React.FC = () => {
             </small>
           </div>
 
+          <div className="form-group">
+            <label>Ada Orang dari Luar?</label>
+            <div className="radio-group">
+              <label className="radio-label">
+                <input
+                  type="radio"
+                  name="hasExternalContacts"
+                  value="no"
+                  checked={!hasExternalContacts}
+                  onChange={() => {
+                    setHasExternalContacts(false);
+                    setExternalContacts([]);
+                  }}
+                />
+                Tidak
+              </label>
+              <label className="radio-label">
+                <input
+                  type="radio"
+                  name="hasExternalContacts"
+                  value="yes"
+                  checked={hasExternalContacts}
+                  onChange={() => {
+                    setHasExternalContacts(true);
+                    if (externalContacts.length === 0) {
+                      setExternalContacts([{ name: '', phone: '', email: '' }]);
+                    }
+                  }}
+                />
+                Ya
+              </label>
+            </div>
+          </div>
+
+          {hasExternalContacts && (
+            <div className="form-group" style={{ border: '1px solid #e5e7eb', borderRadius: '10px', padding: '20px', background: '#f8fafc' }}>
+              <label style={{ marginBottom: '15px', display: 'block', fontSize: '1.15rem', fontWeight: '700' }}>Daftar Orang dari Luar</label>
+              {externalContacts.map((contact, index) => (
+                <div key={index} style={{ marginBottom: '20px', padding: '15px', border: '1px solid #e5e7eb', borderRadius: '8px', background: '#ffffff' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <strong style={{ fontSize: '1.1rem' }}>Orang {index + 1}</strong>
+                    {externalContacts.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => setExternalContacts(externalContacts.filter((_, i) => i !== index))}
+                        style={{
+                          background: '#dc2626',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '4px',
+                          padding: '6px 12px',
+                          cursor: 'pointer',
+                          fontSize: '0.9rem',
+                          fontWeight: '600'
+                        }}
+                      >
+                        Hapus
+                      </button>
+                    )}
+                  </div>
+                  <div style={{ display: 'grid', gap: '12px' }}>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '5px', fontSize: '1rem', fontWeight: '600' }}>Nama *</label>
+                      <input
+                        type="text"
+                        placeholder="Nama lengkap"
+                        value={contact.name}
+                        onChange={(e) => {
+                          const updated = [...externalContacts];
+                          updated[index].name = e.target.value;
+                          setExternalContacts(updated);
+                        }}
+                        required={hasExternalContacts}
+                        style={{ width: '100%', padding: '12px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '1.1rem' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '5px', fontSize: '1rem', fontWeight: '600' }}>Nomor Telepon *</label>
+                      <input
+                        type="tel"
+                        placeholder="08xxxxxxxxxx"
+                        value={contact.phone}
+                        onChange={(e) => {
+                          const updated = [...externalContacts];
+                          updated[index].phone = e.target.value;
+                          setExternalContacts(updated);
+                        }}
+                        required={hasExternalContacts}
+                        style={{ width: '100%', padding: '12px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '1.1rem' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '5px', fontSize: '1rem', fontWeight: '600' }}>Email *</label>
+                      <input
+                        type="email"
+                        placeholder="email@example.com"
+                        value={contact.email}
+                        onChange={(e) => {
+                          const updated = [...externalContacts];
+                          updated[index].email = e.target.value;
+                          setExternalContacts(updated);
+                        }}
+                        required={hasExternalContacts}
+                        style={{ width: '100%', padding: '12px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '1.1rem' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => setExternalContacts([...externalContacts, { name: '', phone: '', email: '' }])}
+                style={{
+                  background: '#2563eb',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '12px 24px',
+                  cursor: 'pointer',
+                  fontSize: '1.1rem',
+                  fontWeight: '700',
+                  width: '100%',
+                  marginTop: '10px'
+                }}
+              >
+                + Tambah Orang Lagi
+              </button>
+            </div>
+          )}
+
           {error && <div className="error-box">{error}</div>}
           {success && <div className="success-box">{success}</div>}
 
-          <div className="form-actions">
-            <button type="button" className="btn-cancel" onClick={() => window.history.back()}>
-              Batal
-            </button>
-            <button type="submit" className="btn-submit">
-              Simpan Kegiatan
-            </button>
+              <div className="form-actions">
+                <button type="button" className="btn-cancel" onClick={() => window.history.back()} disabled={isSubmitting}>
+                  Batal
+                </button>
+                <button type="submit" className="btn-submit" disabled={isSubmitting}>
+                  {isSubmitting ? 'Menyimpan...' : 'Simpan Kegiatan'}
+                </button>
+              </div>
+            </form>
           </div>
-        </form>
-      </div>
+        </div>
+
+        <div style={{ paddingBottom: '20px' }} />
+
+        <footer className="site-footer">
+          <div className="footer-container">
+            <div className="footer-section footer-about">
+              <img src="/Diskominfo.jpg" alt="Logo Diskominfo" className="footer-logo" loading="lazy" />
+              <p>Pusat Informasi Jadwal Kegiatan Resmi Pemerintah Kota Semarang. Dikelola oleh Diskominfo Kota Semarang.</p>
+              <p>Jl. Pemuda No.148, Sekayu, Semarang Tengah, Kota Semarang</p>
+            </div>
+            <div className="footer-section footer-links">
+              <h4>Tautan Terkait</h4>
+              <ul>
+                <li><a href="https://semarangkota.go.id/" target="_blank" rel="noopener noreferrer">Website Resmi Pemkot Semarang</a></li>
+                <li><a href="https://diskominfo.semarangkota.go.id/" target="_blank" rel="noopener noreferrer">Website Diskominfo</a></li>
+                <li><a href="https://semarangkota.go.id/layanan" target="_blank" rel="noopener noreferrer">Layanan Publik</a></li>
+                <li><a href="https://semarangkota.go.id/peta-situs" target="_blank" rel="noopener noreferrer">Peta Situs</a></li>
+              </ul>
+            </div>
+            <div className="footer-section footer-social">
+              <h4>Media Sosial</h4>
+              <div className="social-icons">
+                <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook">F</a>
+                <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">I</a>
+                <a href="https://x.com" target="_blank" rel="noopener noreferrer" aria-label="Twitter / X">X</a>
+                <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" aria-label="YouTube">Y</a>
+              </div>
+            </div>
+          </div>
+          <div className="footer-bottom">
+            <p>&copy; {new Date().getFullYear()} Diskominfo Kota Semarang. Hak Cipta Dilindungi.</p>
+          </div>
+        </footer>
+      </main>
     </div>
   );
 };

@@ -194,13 +194,18 @@ th:nth-child(4), td:nth-child(4) { width: 15%; }
 th:nth-child(5), td:nth-child(5) { width: 25%; }
 
 td {
-  background: white;
+  background: #ffffff !important; /* Pastikan putih */
   color: #333;
   border-right: 1px solid #eee; /* Border vertikal tipis */
   border-bottom: 1px solid #eee; /* Border horizontal tipis */
 }
 td:last-child {
   border-right: none;
+}
+
+/* Kolom Aksi tetap putih */
+td:nth-child(6) {
+  background: #ffffff !important;
 }
 
 tr:hover td {
@@ -221,11 +226,22 @@ td:nth-child(4) {
 }
 
 /* Tambahan: Styling untuk baris ganjil/genap (zebra) */
+tr:nth-child(odd) td {
+  background-color: #ffffff !important; /* Baris ganjil putih */
+}
 tr:nth-child(even) td {
-  background-color: #f7f7f7;
+  background-color: #f7f7f7 !important; /* Baris genap abu terang */
 }
 tr:nth-child(even):hover td {
-  background-color: #FFF8E1;
+  background-color: #FFF8E1 !important;
+}
+tr:nth-child(odd):hover td {
+  background-color: #FFF8E1 !important;
+}
+
+/* Pastikan kolom Aksi selalu putih meski hover */
+tr:hover td:nth-child(6) {
+  background-color: #ffffff !important;
 }
 
 /* Styling saat tidak ada data/error */

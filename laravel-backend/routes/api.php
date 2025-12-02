@@ -13,6 +13,8 @@ Route::middleware('api')->group(function () {
     Route::put('/activities/{id}', [ActivityController::class, 'update']);
     Route::post('/activities/{id}', [ActivityController::class, 'update']); // For FormData with _method=PUT
     Route::delete('/activities/{id}', [ActivityController::class, 'destroy']);
+    Route::get('/activities-pending-approval', [ActivityController::class, 'getPendingApproval']);
+    Route::post('/activities/{id}/approve', [ActivityController::class, 'approveActivity']);
     Route::post('/login', [AuthController::class, 'login']);
     
     // User management routes
