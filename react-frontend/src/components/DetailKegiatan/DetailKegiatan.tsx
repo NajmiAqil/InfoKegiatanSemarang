@@ -24,6 +24,7 @@ interface Activity {
   visibility?: string;
   deskripsi?: string;
   orang_terkait?: string;
+  external_contacts?: string | string[] | { nama: string; nomor: string }[];
   pembuat?: string;
   media?: string | string[];
   repeat?: string;
@@ -122,6 +123,50 @@ const DetailKegiatan = () => {
       return `${day} ${monthNames[parseInt(month) - 1]} ${year}`;
     }
     return dateStr;
+  };
+
+  const formatExternalContacts = (contacts: string | string[] | { nama: string; nomor: string }[] | undefined) => {
+    if (!contacts) return '';
+    
+    // If it's already a string, try to parse it as JSON first
+    if (typeof contacts === 'string') {
+      try {
+        const parsed = JSON.parse(contacts);
+        if (Array.isArray(parsed)) {
+          return parsed
+            .map((contact: any) => {
+              const name = contact.name || contact.nama || '';
+              const phone = contact.phone || contact.nomor || '-';
+              const email = contact.email || '-';
+              return `${name}(${phone};${email})`;
+            })
+            .join('\n');
+        }
+      } catch {
+        // If parsing fails, return as-is
+        return contacts;
+      }
+      return contacts;
+    }
+    
+    // If it's an array
+    if (Array.isArray(contacts)) {
+      // Check if it's array of objects
+      if (contacts.length > 0 && typeof contacts[0] === 'object') {
+        return contacts
+          .map((contact: any) => {
+            const name = contact.name || contact.nama || '';
+            const phone = contact.phone || contact.nomor || '-';
+            const email = contact.email || '-';
+            return `${name}(${phone};${email})`;
+          })
+          .join('\n');
+      }
+      // If it's array of strings
+      return (contacts as string[]).join('\n');
+    }
+    
+    return String(contacts);
   };
 
   if (isLoading) {
@@ -332,6 +377,14 @@ const DetailKegiatan = () => {
             <div className="detail-section">
               <h3>👥 Orang Terkait</h3>
               <p>{getDisplayNamesForOrangTerkait(activity.orang_terkait)}</p>
+            </div>
+          )}
+
+          {/* Orang dari Luar */}
+          {activity.external_contacts && (
+            <div className="detail-section">
+              <h3>👤 GUEST</h3>
+              <p style={{ whiteSpace: 'pre-line' }}>{formatExternalContacts(activity.external_contacts)}</p>
             </div>
           )}
 

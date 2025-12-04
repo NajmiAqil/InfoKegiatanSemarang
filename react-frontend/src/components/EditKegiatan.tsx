@@ -77,8 +77,12 @@ const EditKegiatan: React.FC = () => {
       }
       const data = await response.json();
 
-      // Check if user is the creator
-      if (data.pembuat !== currentUser) {
+      // Check if user has permission to edit
+      // Allow if: user is creator OR user is atasan
+      const isCreator = data.pembuat === currentUser;
+      const isAtasan = currentRole === 'atasan';
+      
+      if (!isCreator && !isAtasan) {
         alert('Anda tidak memiliki akses untuk mengedit kegiatan ini');
         window.location.href = '/';
         return;
@@ -298,19 +302,6 @@ const EditKegiatan: React.FC = () => {
   if (isLoading) {
     return (
       <div className="info-display">
-        <header className="header">
-          <div className="logo-container">
-            <img src="/Diskominfo.jpg" alt="Logo Diskominfo" className="logo-semarang" loading="lazy" />
-            <h1>DASHBOARD KEGIATAN<br />PEMERINTAH KOTA SEMARANG</h1>
-          </div>
-          <div className="header-right" style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
-            <div className="datetime">
-              <div className="date">{formatDateFull(currentTime)}</div>
-              <div className="time">{formatTime(currentTime)}</div>
-            </div>
-            <div className="login-box" role="button" tabIndex={0} onClick={() => (window.location.href = '/')} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { window.location.href = '/'; } }} aria-label="Logout">Logout</div>
-          </div>
-        </header>
         <main className="content">
           <div className="add-kegiatan-page">
             <div className="add-kegiatan-container">
@@ -324,24 +315,7 @@ const EditKegiatan: React.FC = () => {
 
   return (
     <div className="info-display">
-      <header className="header">
-        <div className="logo-container">
-          <img src="/Diskominfo.jpg" alt="Logo Diskominfo" className="logo-semarang" loading="lazy" />
-          <h1>DASHBOARD KEGIATAN<br />PEMERINTAH KOTA SEMARANG</h1>
-        </div>
-        <div className="header-right" style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
-          <div className="datetime">
-            <div className="date">{formatDateFull(currentTime)}</div>
-            <div className="time">{formatTime(currentTime)}</div>
-          </div>
-          <div className="login-box" role="button" tabIndex={0} onClick={() => (window.location.href = '/')} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { window.location.href = '/'; } }} aria-label="Logout">Logout</div>
-        </div>
-      </header>
-
       <main className="content">
-        <section className="agenda-section">
-          <h2>Selamat Datang{username ? `, ${username}` : ''}</h2>
-        </section>
 
         <div className="add-kegiatan-page">
           <div className="add-kegiatan-container">
@@ -1217,36 +1191,7 @@ const EditKegiatan: React.FC = () => {
 
         <div style={{ paddingBottom: '20px' }} />
 
-        <footer className="site-footer">
-          <div className="footer-container">
-            <div className="footer-section footer-about">
-              <img src="/Diskominfo.jpg" alt="Logo Diskominfo" className="footer-logo" loading="lazy" />
-              <p>Pusat Informasi Jadwal Kegiatan Resmi Pemerintah Kota Semarang. Dikelola oleh Diskominfo Kota Semarang.</p>
-              <p>Jl. Pemuda No.148, Sekayu, Semarang Tengah, Kota Semarang</p>
-            </div>
-            <div className="footer-section footer-links">
-              <h4>Tautan Terkait</h4>
-              <ul>
-                <li><a href="https://semarangkota.go.id/" target="_blank" rel="noopener noreferrer">Website Resmi Pemkot Semarang</a></li>
-                <li><a href="https://diskominfo.semarangkota.go.id/" target="_blank" rel="noopener noreferrer">Website Diskominfo</a></li>
-                <li><a href="https://semarangkota.go.id/layanan" target="_blank" rel="noopener noreferrer">Layanan Publik</a></li>
-                <li><a href="https://semarangkota.go.id/peta-situs" target="_blank" rel="noopener noreferrer">Peta Situs</a></li>
-              </ul>
-            </div>
-            <div className="footer-section footer-social">
-              <h4>Media Sosial</h4>
-              <div className="social-icons">
-                <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook">F</a>
-                <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">I</a>
-                <a href="https://x.com" target="_blank" rel="noopener noreferrer" aria-label="Twitter / X">X</a>
-                <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" aria-label="YouTube">Y</a>
-              </div>
-            </div>
-          </div>
-          <div className="footer-bottom">
-            <p>&copy; {new Date().getFullYear()} Diskominfo Kota Semarang. Hak Cipta Dilindungi.</p>
-          </div>
-        </footer>
+        {/* footer removed for add/edit pages */}
       </main>
     </div>
   );

@@ -169,12 +169,19 @@ const AtasanPage: React.FC = () => {
     };
   }, [selectedBawahan, selectedOpd, fetchActivities]);
 
-  const handleDelete = async (activityId: number) => {
+  const handleDelete = async (activity: Activity) => {
+    // Check if this is an occurrence of a repeating event
+    if ((activity as any).is_occurrence) {
+      alert(`Ini adalah pengulangan kegiatan. Silakan hapus kegiatan pada tanggal asli: ${(activity as any).original_date}`);
+      return;
+    }
+
     if (!window.confirm('Apakah Anda yakin ingin menghapus kegiatan ini?')) {
       return;
     }
 
     try {
+      const activityId = activity.id || activity.no;
       const currentUser = localStorage.getItem('username') || sessionStorage.getItem('username') || '';
       const response = await fetch(`/api/activities/${activityId}?username=${encodeURIComponent(currentUser)}`, {
         method: 'DELETE',
@@ -277,7 +284,14 @@ const AtasanPage: React.FC = () => {
     }
   };
 
-  const handleEdit = (activityId: number) => {
+  const handleEdit = (activity: Activity) => {
+    // Check if this is an occurrence of a repeating event
+    if ((activity as any).is_occurrence) {
+      alert(`Ini adalah pengulangan kegiatan. Silakan edit kegiatan pada tanggal asli: ${(activity as any).original_date}`);
+      return;
+    }
+    
+    const activityId = activity.id || activity.no;
     window.location.href = `/edit-kegiatan/${activityId}`;
   };
 
@@ -290,8 +304,8 @@ const AtasanPage: React.FC = () => {
       return true;
     }
     
-    // Atasan can modify all non-private activities
-    if (currentRole === 'atasan' && activity.visibility !== 'private') {
+    // Atasan can modify ALL activities (including private for approval/review purposes)
+    if (currentRole === 'atasan') {
       return true;
     }
     
@@ -600,7 +614,7 @@ const AtasanPage: React.FC = () => {
                                     {canModify(activity) && (
                                       <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
                                         <button
-                                          onClick={() => handleEdit(activity.id || activity.no)}
+                                          onClick={() => handleEdit(activity)}
                                           style={{
                                             padding: '6px 12px',
                                             background: '#FFB300',
@@ -619,7 +633,7 @@ const AtasanPage: React.FC = () => {
                                           ✏️ Edit
                                         </button>
                                         <button
-                                          onClick={() => handleDelete(activity.id || activity.no)}
+                                          onClick={() => handleDelete(activity)}
                                           style={{
                                             padding: '6px 12px',
                                             background: '#d32f2f',
@@ -729,7 +743,7 @@ const AtasanPage: React.FC = () => {
                                     {canModify(activity) && (
                                       <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
                                         <button
-                                          onClick={() => handleEdit(activity.id || activity.no)}
+                                          onClick={() => handleEdit(activity)}
                                           style={{
                                             padding: '6px 12px',
                                             background: '#FFB300',
@@ -748,7 +762,7 @@ const AtasanPage: React.FC = () => {
                                           ✏️ Edit
                                         </button>
                                         <button
-                                          onClick={() => handleDelete(activity.id || activity.no)}
+                                          onClick={() => handleDelete(activity)}
                                           style={{
                                             padding: '6px 12px',
                                             background: '#d32f2f',
@@ -825,7 +839,7 @@ const AtasanPage: React.FC = () => {
                       <td>
                         <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
                           <button
-                            onClick={() => window.location.href = `/detail/${activity.id}`}
+                            onClick={() => window.location.href = `/kegiatan/${activity.id}`}
                             style={{
                               padding: '6px 12px',
                               background: '#2196F3',
@@ -844,7 +858,7 @@ const AtasanPage: React.FC = () => {
                             👁️ Detail
                           </button>
                           <button
-                            onClick={() => window.location.href = `/edit/${activity.id}`}
+                            onClick={() => handleEdit(activity)}
                             style={{
                               padding: '6px 12px',
                               background: '#FFB300',
@@ -863,7 +877,7 @@ const AtasanPage: React.FC = () => {
                             ✏️ Edit
                           </button>
                           <button
-                            onClick={() => handleDelete(activity.id || 0)}
+                            onClick={() => handleDelete(activity)}
                             style={{
                               padding: '6px 12px',
                               background: '#f44336',

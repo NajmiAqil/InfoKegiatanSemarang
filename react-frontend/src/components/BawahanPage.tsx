@@ -79,7 +79,15 @@ const BawahanPage: React.FC = () => {
     };
   }, [selectedOpd, fetchActivities]);
 
-  const handleDelete = async (activityId: number) => {
+  const handleDelete = async (activity: Activity) => {
+    // Cek apakah ini occurrence dari kegiatan repeat
+    if ((activity as any).is_occurrence) {
+      const originalDate = (activity as any).original_date;
+      alert(`Ini adalah kemunculan berulang dari kegiatan.\n\nUntuk menghapus, silakan hapus kegiatan pada tanggal asli: ${formatDisplayDate(originalDate)}\n\nMenghapus kegiatan asli akan menghapus semua kemunculan berulangnya.`);
+      return;
+    }
+
+    const activityId = activity.id || activity.no;
     if (!window.confirm('Apakah Anda yakin ingin menghapus kegiatan ini?')) {
       return;
     }
@@ -109,8 +117,14 @@ const BawahanPage: React.FC = () => {
     }
   };
 
-  const handleEdit = (activityId: number) => {
-    window.location.href = `/edit-kegiatan/${activityId}`;
+  const handleEdit = (activity: Activity) => {
+    // Cek apakah ini occurrence dari kegiatan repeat
+    if ((activity as any).is_occurrence) {
+      const originalDate = (activity as any).original_date;
+      alert(`Ini adalah kemunculan berulang dari kegiatan.\n\nUntuk mengedit, silakan edit kegiatan pada tanggal asli: ${formatDisplayDate(originalDate)}\n\nMengedit kegiatan asli akan mempengaruhi semua kemunculan berulangnya.`);
+      return;
+    }
+    window.location.href = `/edit-kegiatan/${activity.id || activity.no}`;
   };
 
   const canModify = (activity: Activity) => {
@@ -349,7 +363,7 @@ const BawahanPage: React.FC = () => {
                                     {canModify(activity) && (
                                       <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
                                         <button
-                                          onClick={() => handleEdit(activity.id || activity.no)}
+                                          onClick={() => handleEdit(activity)}
                                           style={{
                                             padding: '6px 12px',
                                             background: '#FFB300',
@@ -368,7 +382,7 @@ const BawahanPage: React.FC = () => {
                                           ✏️ Edit
                                         </button>
                                         <button
-                                          onClick={() => handleDelete(activity.id || activity.no)}
+                                          onClick={() => handleDelete(activity)}
                                           style={{
                                             padding: '6px 12px',
                                             background: '#d32f2f',
@@ -478,7 +492,7 @@ const BawahanPage: React.FC = () => {
                                     {canModify(activity) && (
                                       <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
                                         <button
-                                          onClick={() => handleEdit(activity.id || activity.no)}
+                                          onClick={() => handleEdit(activity)}
                                           style={{
                                             padding: '6px 12px',
                                             background: '#FFB300',
@@ -497,7 +511,7 @@ const BawahanPage: React.FC = () => {
                                           ✏️ Edit
                                         </button>
                                         <button
-                                          onClick={() => handleDelete(activity.id || activity.no)}
+                                          onClick={() => handleDelete(activity)}
                                           style={{
                                             padding: '6px 12px',
                                             background: '#d32f2f',

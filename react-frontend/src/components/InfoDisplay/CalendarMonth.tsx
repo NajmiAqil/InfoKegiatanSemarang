@@ -73,13 +73,21 @@ const CalendarMonth: React.FC<Props> = ({ activities, fromPath = '/' }) => {
 
   const selectedEvents = selected ? (eventsByDate.get(selected.toDateString()) || []) : [];
 
-  const handleDelete = async (activityId: number | string, e: React.MouseEvent) => {
+  const handleDelete = async (activity: Activity, e: React.MouseEvent) => {
     e.stopPropagation();
+    
+    // Check if this is an occurrence of a repeating event
+    if ((activity as any).is_occurrence) {
+      alert(`Ini adalah pengulangan kegiatan. Silakan hapus kegiatan pada tanggal asli: ${(activity as any).original_date}`);
+      return;
+    }
+    
     if (!window.confirm('Apakah Anda yakin ingin menghapus kegiatan ini?')) {
       return;
     }
 
     try {
+      const activityId = activity.id || activity.no;
       const response = await fetch(`/api/activities/${activityId}`, {
         method: 'DELETE',
       });
@@ -96,8 +104,16 @@ const CalendarMonth: React.FC<Props> = ({ activities, fromPath = '/' }) => {
     }
   };
 
-  const handleEdit = (activityId: number | string, e: React.MouseEvent) => {
+  const handleEdit = (activity: Activity, e: React.MouseEvent) => {
     e.stopPropagation();
+    
+    // Check if this is an occurrence of a repeating event
+    if ((activity as any).is_occurrence) {
+      alert(`Ini adalah pengulangan kegiatan. Silakan edit kegiatan pada tanggal asli: ${(activity as any).original_date}`);
+      return;
+    }
+    
+    const activityId = activity.id || activity.no;
     window.location.href = `/edit-kegiatan/${activityId}`;
   };
 
@@ -205,7 +221,7 @@ const CalendarMonth: React.FC<Props> = ({ activities, fromPath = '/' }) => {
                       {canModify(ev) && (
                         <div style={{ display: 'flex', gap: '4px' }}>
                           <button
-                            onClick={(e) => handleEdit(ev.no, e)}
+                            onClick={(e) => handleEdit(ev, e)}
                             style={{
                               padding: '4px 8px',
                               background: '#FFB300',
@@ -221,7 +237,7 @@ const CalendarMonth: React.FC<Props> = ({ activities, fromPath = '/' }) => {
                             ✏️
                           </button>
                           <button
-                            onClick={(e) => handleDelete(ev.no, e)}
+                            onClick={(e) => handleDelete(ev, e)}
                             style={{
                               padding: '4px 8px',
                               background: '#d32f2f',

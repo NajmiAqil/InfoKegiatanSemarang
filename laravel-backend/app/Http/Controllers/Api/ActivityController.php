@@ -5,9 +5,75 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Activity;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 class ActivityController extends Controller
 {
+    /**
+     * Expand repeating activities into multiple occurrences
+     */
+    private function expandOccurrences($activity, $horizonDays = 180)
+    {
+        if ($activity->repeat !== 'yes' || !$activity->repeat_frequency) {
+            return [$activity];
+        }
+
+        $occurrences = [];
+        $startDate = Carbon::parse($activity->tanggal);
+        $endDate = $activity->repeat_end_date 
+            ? Carbon::parse($activity->repeat_end_date) 
+            : Carbon::now()->addDays($horizonDays);
+        
+        // Batasi horizon maksimal
+        $maxDate = Carbon::now()->addDays($horizonDays);
+        if ($endDate->gt($maxDate)) {
+            $endDate = $maxDate;
+        }
+
+        $currentDate = $startDate->copy();
+        
+        while ($currentDate->lte($endDate)) {
+            // Clone activity dengan tanggal yang berbeda
+            $occurrence = clone $activity;
+            $occurrence->tanggal = $currentDate->format('Y-m-d');
+            
+            // Hitung tanggal_berakhir untuk occurrence ini
+            if ($activity->tanggal_berakhir && $activity->tanggal_berakhir !== $activity->tanggal) {
+                $daysDiff = Carbon::parse($activity->tanggal_berakhir)->diffInDays(Carbon::parse($activity->tanggal));
+                $occurrence->tanggal_berakhir = $currentDate->copy()->addDays($daysDiff)->format('Y-m-d');
+            } else {
+                $occurrence->tanggal_berakhir = $occurrence->tanggal;
+            }
+            
+            // Tandai occurrence yang bukan asli (untuk UI: disable edit/delete pada occurrence)
+            $occurrence->is_occurrence = !$currentDate->isSameDay($startDate);
+            $occurrence->original_date = $activity->tanggal;
+            
+            $occurrences[] = $occurrence;
+            
+            // Increment berdasarkan frekuensi
+            switch ($activity->repeat_frequency) {
+                case 'daily':
+                    $currentDate->addDay();
+                    break;
+                case 'weekly':
+                    $currentDate->addWeek();
+                    break;
+                case 'monthly':
+                    $currentDate->addMonth();
+                    break;
+                case 'yearly':
+                    $currentDate->addYear();
+                    break;
+                default:
+                    // Jika frekuensi tidak dikenal, hentikan
+                    return [$activity];
+            }
+        }
+        
+        return $occurrences;
+    }
+
     public function index(Request $request)
     {
         $username = $request->query('username');
@@ -98,14 +164,28 @@ class ActivityController extends Controller
         
         $allActivities = $query->get();
         
+        // Expand repeating activities into multiple occurrences
+        $expandedActivities = collect();
+        foreach ($allActivities as $activity) {
+            $occurrences = $this->expandOccurrences($activity);
+            foreach ($occurrences as $occurrence) {
+                $expandedActivities->push($occurrence);
+            }
+        }
+        
+        // Sort by date and time after expansion
+        $expandedActivities = $expandedActivities->sortBy(function($activity) {
+            return $activity->tanggal . ' ' . $activity->jam_mulai;
+        })->values();
+        
         // Separate by date (support multi-day: show in 'today' if today between tanggal and tanggal_berakhir)
-        $todayActivities = $allActivities->filter(function($activity) use ($today) {
+        $todayActivities = $expandedActivities->filter(function($activity) use ($today) {
             $start = $activity->tanggal;
             $end = $activity->tanggal_berakhir ?: $activity->tanggal;
             return $start <= $today && $today <= $end;
         })->values();
 
-        $tomorrowActivities = $allActivities->filter(function($activity) use ($today) {
+        $tomorrowActivities = $expandedActivities->filter(function($activity) use ($today) {
             // Tomorrow & future (strictly after today end range)
             return $activity->tanggal > $today;
         })->values();
@@ -140,7 +220,8 @@ class ActivityController extends Controller
                 'pembuat' => 'required|string',
                 'opd' => 'nullable|string',
                 'media' => 'nullable|array',
-                'media.*' => 'mimes:jpeg,png,jpg,gif,mp4,avi,mov|max:20480', // max 20MB
+                // Tambah dukungan webp & heic; naikkan batas ke 50MB untuk fleksibilitas
+                'media.*' => 'mimes:jpeg,png,jpg,gif,webp,heic,mp4,avi,mov|max:51200', // max 50MB
                 'repeat' => 'required|in:yes,no',
                 'repeat_frequency' => 'nullable|in:daily,weekly,monthly,yearly',
                 'repeat_end_date' => 'nullable|string',
@@ -164,12 +245,32 @@ class ActivityController extends Controller
         // Handle file uploads
         $mediaPaths = [];
         if ($request->hasFile('media')) {
-            foreach ((array) $request->file('media') as $file) {
+            foreach ((array) $request->file('media') as $index => $file) {
                 if ($file && $file->isValid()) {
-                    $path = $file->store('activities', 'public');
-                    $mediaPaths[] = $path;
+                    try {
+                        \Log::info('Uploading media file', [
+                            'index' => $index,
+                            'original_name' => $file->getClientOriginalName(),
+                            'mime' => $file->getMimeType(),
+                            'size' => $file->getSize()
+                        ]);
+                        $path = $file->store('activities', 'public');
+                        $mediaPaths[] = $path;
+                    } catch (\Throwable $t) {
+                        \Log::error('Failed to store media file, skipping', [
+                            'index' => $index,
+                            'error' => $t->getMessage()
+                        ]);
+                        // Jangan gagalkan seluruh request; lanjutkan tanpa file ini
+                        continue;
+                    }
                 } else {
-                    \Log::warning('Skipping invalid media upload');
+                    \Log::warning('Skipping invalid media upload', [
+                        'index' => $index,
+                        'original_name' => $file ? $file->getClientOriginalName() : null
+                    ]);
+                    // Jangan gagalkan seluruh request; lanjutkan tanpa file ini
+                    continue;
                 }
             }
         }
@@ -252,6 +353,11 @@ class ActivityController extends Controller
 
         $username = $request->query('username');
         $role = $request->query('role');
+
+        // Atasan can view any activity for approval purposes
+        if ($role === 'atasan') {
+            return response()->json($activity);
+        }
 
         // Visibility rules:
         // - public: always visible
@@ -340,7 +446,7 @@ class ActivityController extends Controller
             return response()->json(['message' => 'Activity not found'], 404);
         }
 
-        // Authorization: creator can always update, atasan can update non-private activities
+        // Authorization: creator can always update, atasan can update any activity
         $username = $request->query('username');
         $role = $request->query('role');
         
@@ -351,16 +457,16 @@ class ActivityController extends Controller
         // Check if user is creator
         $isCreator = $username === $activity->pembuat;
         
-        // Check if user is atasan and activity is not private
-        $isAtasanAllowed = ($role === 'atasan') && ($activity->visibility !== 'private');
+        // Atasan can edit any activity (for approval/review purposes)
+        $isAtasan = ($role === 'atasan');
         
-        // Allow update if user is creator OR (atasan AND not private)
-        if (!$isCreator && !$isAtasanAllowed) {
+        // Allow update if user is creator OR atasan
+        if (!$isCreator && !$isAtasan) {
             return response()->json([
-                'message' => 'Forbidden: only the creator or atasan (for non-private activities) can update this activity',
+                'message' => 'Forbidden: only the creator or atasan can update this activity',
                 'debug' => [
                     'is_creator' => $isCreator,
-                    'is_atasan' => $role === 'atasan',
+                    'is_atasan' => $isAtasan,
                     'visibility' => $activity->visibility,
                     'allowed' => false
                 ]
@@ -383,7 +489,7 @@ class ActivityController extends Controller
                 'pembuat' => 'required|string',
                 'opd' => 'nullable|string',
                 'media' => 'nullable|array',
-                'media.*' => 'mimes:jpeg,png,jpg,gif,mp4,avi,mov|max:20480',
+                'media.*' => 'mimes:jpeg,png,jpg,gif,webp,heic,mp4,avi,mov|max:51200',
                 'repeat' => 'required|in:yes,no',
                 'repeat_frequency' => 'nullable|in:daily,weekly,monthly,yearly',
                 'repeat_end_date' => 'nullable|string',
